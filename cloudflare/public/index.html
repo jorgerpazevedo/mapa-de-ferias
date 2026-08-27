@@ -98,20 +98,47 @@
   .login-error{background:var(--rose-bg); color:var(--rose); font-size:13px; padding:10px 12px; border-radius:10px; margin-bottom:14px; display:none;}
   .login-hint{margin-top:20px; font-size:12px; color:var(--ink-faint); line-height:1.6;}
 
-  #app-view{min-height:100vh; display:flex;}
-  .sidebar{width:230px; flex-shrink:0; background:var(--surface); border-right:1px solid var(--sand); display:flex; flex-direction:column; padding:22px 16px;}
-  .brand{display:flex; align-items:center; gap:10px; padding:0 6px 22px; border-bottom:1px solid var(--sand); margin-bottom:16px;}
-  .brand-mark{width:30px;height:30px;border-radius:9px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:15px;}
+  #app-view{min-height:100vh; display:flex; flex-direction:column;}
+  .brand{display:flex; align-items:center; gap:10px;}
+  .brand-mark{width:30px;height:30px;border-radius:9px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:15px; flex-shrink:0;}
   .brand-name{font-family:var(--font-display); font-weight:600; font-size:16.5px;}
-  .nav-btn{display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:10px 12px; border-radius:10px; background:transparent; border:none; color:var(--ink-soft); font-weight:500; font-size:14px; margin-bottom:2px;}
-  .nav-btn:hover{background:var(--surface-2); color:var(--ink);}
-  .nav-btn.active{background:var(--accent-bg); color:var(--accent-ink);}
-  .sidebar-foot{margin-top:auto; padding-top:16px; border-top:1px solid var(--sand);}
-  .who{padding:0 6px 10px;}
-  .who-name{font-weight:600; font-size:13.5px;}
-  .who-role{font-size:12px; color:var(--ink-faint);}
 
-  .main{flex:1; min-width:0; padding:32px 40px 60px; max-width:1080px;}
+  .topbar{position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:14px; padding:12px 20px; background:var(--surface); border-bottom:1px solid var(--sand);}
+  .hamburger-btn{width:38px; height:38px; border-radius:10px; border:1px solid var(--sand); background:var(--paper); color:var(--ink); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .hamburger-btn svg, .drawer-close svg{width:19px; height:19px;}
+  .hamburger-btn:hover{background:var(--surface-2);}
+  .topbar-spacer{flex:1;}
+  .topbar-avatar{width:34px; height:34px; border-radius:50%; background:var(--accent-bg); color:var(--accent-ink); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0; border:none; font-family:inherit;}
+
+  .drawer-backdrop{position:fixed; inset:0; background:rgba(15,20,14,.4); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); z-index:40; opacity:0; pointer-events:none; transition:opacity .2s ease;}
+  .drawer-backdrop.open{opacity:1; pointer-events:auto;}
+  .drawer{position:fixed; top:0; left:0; bottom:0; width:300px; max-width:86vw; background:var(--surface); border-right:1px solid var(--sand); z-index:41; transform:translateX(-100%); transition:transform .25s cubic-bezier(.4,0,.2,1); display:flex; flex-direction:column; box-shadow:var(--shadow);}
+  .drawer.open{transform:translateX(0);}
+  .drawer-head{padding:18px; border-bottom:1px solid var(--sand);}
+  .drawer-head-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
+  .drawer-close{width:30px; height:30px; border-radius:8px; border:1px solid var(--sand); background:var(--paper); color:var(--ink-soft); display:flex; align-items:center; justify-content:center;}
+  .drawer-close:hover{background:var(--surface-2);}
+  .drawer-profile{display:flex; align-items:center; gap:12px;}
+  .drawer-avatar{width:46px; height:46px; border-radius:50%; background:var(--accent-bg); color:var(--accent-ink); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:16px; flex-shrink:0;}
+  .drawer-profile-name{font-weight:600; font-size:15px;}
+  .drawer-profile-role{font-size:12px; color:var(--ink-faint);}
+  .drawer-balance-chip{display:inline-flex; align-items:center; gap:5px; margin-top:6px; padding:3px 9px; border-radius:999px; background:var(--accent-bg); color:var(--accent-ink); font-size:11.5px; font-weight:600; font-family:var(--font-mono);}
+
+  .drawer-body{flex:1; overflow-y:auto; padding:10px 12px 18px;}
+  .drawer-section-label{display:flex; align-items:center; gap:8px; padding:16px 10px 6px; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint); font-weight:700;}
+  .drawer-section-label .rh-badge{background:var(--accent-bg); color:var(--accent-ink); font-size:9.5px; padding:1px 6px; border-radius:999px; letter-spacing:0; text-transform:none; font-weight:700;}
+  .drawer-section.rh{background:var(--accent-bg); border-radius:14px; padding:2px 0 8px; margin:6px 0;}
+  .drawer-section.rh .drawer-section-label{color:var(--accent-ink); opacity:.8;}
+  .drawer-item{display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:10px 10px; border-radius:10px; background:transparent; border:none; color:var(--ink-soft); font-weight:500; font-size:14px; margin-bottom:2px;}
+  .drawer-item svg{width:19px; height:19px; flex-shrink:0;}
+  .drawer-item:hover{background:var(--surface-2); color:var(--ink);}
+  .drawer-item.active{background:var(--accent-bg); color:var(--accent-ink);}
+  .drawer-section.rh .drawer-item:hover{background:rgba(255,255,255,.35);}
+  .drawer-section.rh .drawer-item.active{background:var(--surface); box-shadow:var(--shadow);}
+  .drawer-item .item-badge{margin-left:auto; background:var(--rose); color:#fff; font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; font-family:var(--font-mono);}
+  .drawer-foot{padding:14px 18px; border-top:1px solid var(--sand);}
+
+  .main{flex:1; min-width:0; padding:32px 40px 60px; max-width:1080px; width:100%; margin:0 auto;}
   .page-head{display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:26px; flex-wrap:wrap;}
   .page-head h2{font-size:24px;}
   .page-head p{color:var(--ink-soft); font-size:13.5px; margin-top:4px;}
@@ -190,7 +217,7 @@
   .li-sub{font-size:12px; color:var(--ink-faint);}
 
   .profile-grid{display:grid; grid-template-columns:1.1fr 1fr; gap:20px;}
-  @media (max-width:820px){ .profile-grid{grid-template-columns:1fr;} .sidebar{width:76px;} .brand-name,.nav-btn span.lbl{display:none;} .who{display:none;} .main{padding:24px 18px 50px;} }
+  @media (max-width:820px){ .profile-grid{grid-template-columns:1fr;} .main{padding:24px 18px 50px;} }
 
   .balance-card{padding:20px;}
   .balance-row{display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid var(--sand);}
@@ -239,16 +266,35 @@
   </div>
 
   <div id="app-view" class="hidden">
-    <div class="sidebar">
+    <div class="topbar">
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Abrir menu"></button>
       <div class="brand"><div class="brand-mark">🌴</div><div class="brand-name">Mapa de Férias</div></div>
-      <button class="nav-btn active" data-view="home"><span>🏠</span><span class="lbl">Início</span></button>
-      <button class="nav-btn" data-view="team" id="nav-team"><span>👥</span><span class="lbl">Colaboradores</span></button>
-      <button class="nav-btn" data-view="mine"><span>🗓️</span><span class="lbl">As minhas férias</span></button>
-      <div class="sidebar-foot">
-        <div class="who"><div class="who-name" id="who-name">—</div><div class="who-role" id="who-role">—</div></div>
+      <div class="topbar-spacer"></div>
+      <button class="topbar-avatar" id="topbar-avatar" title="Abrir menu">—</button>
+    </div>
+
+    <div class="drawer-backdrop" id="drawer-backdrop"></div>
+    <div class="drawer" id="drawer">
+      <div class="drawer-head">
+        <div class="drawer-head-top">
+          <div class="brand"><div class="brand-mark">🌴</div><div class="brand-name">Mapa de Férias</div></div>
+          <button class="drawer-close" id="drawer-close" aria-label="Fechar menu"></button>
+        </div>
+        <div class="drawer-profile">
+          <div class="drawer-avatar" id="drawer-avatar">—</div>
+          <div>
+            <div class="drawer-profile-name" id="drawer-name">—</div>
+            <div class="drawer-profile-role" id="drawer-role">—</div>
+            <div class="drawer-balance-chip" id="drawer-balance">— dias restantes</div>
+          </div>
+        </div>
+      </div>
+      <nav class="drawer-body" id="drawer-body"></nav>
+      <div class="drawer-foot">
         <button class="btn btn-ghost btn-block btn-sm" id="logout-btn">Sair</button>
       </div>
     </div>
+
     <div class="main" id="main"></div>
   </div>
 </div>
@@ -377,41 +423,202 @@
 
   function currentUser(){ return state ? state.me : null; }
 
+  // ---------------- Icons ----------------
+  var ICON_PATHS = {
+    menu: '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>',
+    x: '<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>',
+    home: '<path d="M3 11l9-7 9 7"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/>',
+    calendarPlus: '<rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="12" y1="13" x2="12" y2="18"/><line x1="9.5" y1="15.5" x2="14.5" y2="15.5"/>',
+    list: '<line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4.5" cy="6" r="1.3" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="4.5" cy="18" r="1.3" fill="currentColor" stroke="none"/>',
+    paperclip: '<path d="M21 12.5l-8.5 8.5a4 4 0 0 1-5.66-5.66l9.2-9.19a2.67 2.67 0 0 1 3.77 3.77l-9.2 9.19a1.33 1.33 0 0 1-1.88-1.88l8.49-8.48"/>',
+    calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/><circle cx="8" cy="15" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="15" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="15" r="1" fill="currentColor" stroke="none"/>',
+    checkCircle: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5 5.5-5.5"/>',
+    barChart: '<line x1="5" y1="20" x2="5" y2="12"/><line x1="12" y1="20" x2="12" y2="6"/><line x1="19" y1="20" x2="19" y2="15"/><line x1="3" y1="21" x2="21" y2="21"/>',
+    users: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.6"/><path d="M15.7 20a4.3 4.3 0 0 1 5.3-4.2"/>',
+    settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.97 7.97 0 0 0 0-2l2-1.6-2-3.4-2.4.8a8 8 0 0 0-1.7-1L14.8 3h-4l-.5 2.8a8 8 0 0 0-1.7 1l-2.4-.8-2 3.4L6 12a7.97 7.97 0 0 0 0 2l-2 1.6 2 3.4 2.4-.8a8 8 0 0 0 1.7 1l.5 2.8h4l.5-2.8a8 8 0 0 0 1.7-1l2.4.8 2-3.4-2-1.6z"/>',
+    help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.7 2.2c-.9.5-1.2 1-1.2 2.1"/><line x1="12" y1="17" x2="12" y2="17.01"/>'
+  };
+  function icon(name){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(ICON_PATHS[name]||'')+'</svg>';
+  }
+
+  // ---------------- Drawer navigation ----------------
+  var NAV_STRUCTURE = [
+    { section:'Área do Colaborador', items:[
+      {key:'home', label:'Meu Painel', icon:'home'},
+      {action:'mark', label:'Marcar Férias / Ausência', icon:'calendarPlus'},
+      {key:'mine', label:'Meus Pedidos & Histórico', icon:'list'},
+      {key:'justificativos', label:'Justificativos', icon:'paperclip'}
+    ]},
+    { section:'Gestão & RH', rh:true, gestorOnly:true, items:[
+      {key:'teamcal', label:'Calendário da Equipa', icon:'calendar'},
+      {key:'pending', label:'Aprovações Pendentes', icon:'checkCircle', badge:true},
+      {key:'reports', label:'Relatórios & Estatísticas', icon:'barChart'},
+      {key:'team', label:'Gestão de Colaboradores', icon:'users'}
+    ]},
+    { section:'Geral & Definições', items:[
+      {key:'settings', label:'Configurações', icon:'settings'},
+      {key:'help', label:'Ajuda & Políticas', icon:'help'}
+    ]}
+  ];
+  var drawerOpen = false;
+  function openDrawer(){ drawerOpen=true; syncDrawerOpenState(); }
+  function closeDrawer(){ drawerOpen=false; syncDrawerOpenState(); }
+  function syncDrawerOpenState(){
+    document.getElementById('drawer').classList.toggle('open', drawerOpen);
+    document.getElementById('drawer-backdrop').classList.toggle('open', drawerOpen);
+    document.body.style.overflow = drawerOpen ? 'hidden' : '';
+  }
+
   function render(){
     var me = currentUser();
     if(!me) return;
-    document.getElementById('who-name').textContent = me.name;
-    document.getElementById('who-role').textContent = me.role==='gestor' ? 'Gestor' : 'Colaborador';
-    document.getElementById('nav-team').style.display = me.role==='gestor' ? '' : 'none';
-    if(me.role!=='gestor' && currentView==='team') currentView='home';
-    renderNav();
+    var pendingCount = me.role==='gestor' ? state.leaves.filter(function(l){return l.status==='pendente';}).length : 0;
+    var vRemain = me.vacationDaysTotal - me.balances.ferias.aprovado;
+    var ini = esc(initials(me.name));
+    document.getElementById('drawer-avatar').textContent = ini;
+    document.getElementById('topbar-avatar').textContent = ini;
+    document.getElementById('drawer-name').textContent = me.name;
+    document.getElementById('drawer-role').textContent = me.role==='gestor' ? 'Gestor' : 'Colaborador';
+    document.getElementById('drawer-balance').textContent = vRemain+' dias restantes';
+
+    var gestorViews = {team:1, pending:1, teamcal:1, reports:1};
+    if(gestorViews[currentView] && me.role!=='gestor') currentView='home';
+
+    renderDrawerBody(me, pendingCount);
     renderMain();
   }
 
-  function renderNav(){
-    document.querySelectorAll('.nav-btn[data-view]').forEach(function(btn){
-      btn.classList.toggle('active', btn.getAttribute('data-view')===currentView);
+  function renderDrawerBody(me, pendingCount){
+    var body = document.getElementById('drawer-body');
+    var html = '';
+    NAV_STRUCTURE.forEach(function(sec){
+      if(sec.gestorOnly && me.role!=='gestor') return;
+      html += '<div class="drawer-section'+(sec.rh?' rh':'')+'"><div class="drawer-section-label">'+esc(sec.section)+(sec.rh?' <span class="rh-badge">RH</span>':'')+'</div>';
+      sec.items.forEach(function(it){
+        var active = it.key && it.key===currentView;
+        var badge = (it.badge && pendingCount>0) ? '<span class="item-badge">'+pendingCount+'</span>' : '';
+        html += '<button type="button" class="drawer-item'+(active?' active':'')+'" data-nav="'+(it.key||'')+'" data-action="'+(it.action||'')+'">'+icon(it.icon)+'<span>'+esc(it.label)+'</span>'+badge+'</button>';
+      });
+      html += '</div>';
     });
-    var me = currentUser();
-    var homeBtn = document.querySelector('.nav-btn[data-view="home"]');
-    var oldBadge = homeBtn.querySelector('.nav-badge');
-    if(oldBadge) oldBadge.remove();
-    if(me && me.role==='gestor'){
-      var n = state.leaves.filter(function(l){return l.status==='pendente';}).length;
-      if(n>0){
-        var badge = document.createElement('span');
-        badge.className='nav-badge'; badge.textContent=n;
-        homeBtn.appendChild(badge);
-      }
-    }
+    body.innerHTML = html;
+    body.querySelectorAll('[data-nav], [data-action]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var action = btn.getAttribute('data-action');
+        var key = btn.getAttribute('data-nav');
+        closeDrawer();
+        if(action==='mark'){ openLeaveModal(state.me.id, state.me.name); return; }
+        currentView = key;
+        render();
+      });
+    });
   }
 
   function renderMain(){
     var me = currentUser();
     var main = document.getElementById('main');
-    if(currentView==='team' && me.role==='gestor'){ main.innerHTML = viewTeam(); wireTeam(); return; }
+    if(currentView==='team'){ main.innerHTML = viewTeam(); wireTeam(); return; }
     if(currentView==='mine'){ main.innerHTML = viewMine(); wirePersonal(); return; }
+    if(currentView==='pending'){ main.innerHTML = viewPendingApprovals(); wirePendingApprovals(); return; }
+    if(currentView==='teamcal'){ main.innerHTML = viewTeamCalendar(); wireTeamCalendar(); return; }
+    if(currentView==='reports'){ main.innerHTML = viewReports(); wireReports(); return; }
+    if(currentView==='settings'){ main.innerHTML = viewSettings(); return; }
+    if(currentView==='help'){ main.innerHTML = viewHelp(); return; }
+    if(currentView==='justificativos'){ main.innerHTML = viewJustificativos(); return; }
     main.innerHTML = viewHome(); wireHome();
+  }
+
+  function viewPendingApprovals(){
+    var pending = state.leaves.filter(function(l){return l.status==='pendente';});
+    var html = '<div class="page-head"><div><h2>Aprovações Pendentes</h2><p>Central de validação rápida para a equipa.</p></div></div>';
+    html += '<div class="panel'+(pending.length?' panel-attention':'')+'"><div class="panel-head"><h3>Pedidos ('+pending.length+')</h3></div><div class="panel-body pad" style="padding-top:2px;">';
+    if(!pending.length){
+      html += '<div class="empty">Sem pedidos pendentes.</div>';
+    } else {
+      pending.forEach(function(l){
+        html += '<div class="req-row"><div class="list-item-main"><div class="avatar">'+esc(initials(l.employeeName))+'</div><div><div class="li-name">'+esc(l.employeeName)+'</div><div class="li-sub">'+chipLabel(l.type)+' · '+fmt(l.start)+' – '+fmt(l.end)+' · '+l.days+' dia'+(l.days!==1?'s':'')+'</div></div></div>'+
+          '<div class="req-actions"><button class="btn btn-sm btn-reject" data-reject="'+l.id+'">Rejeitar</button><button class="btn btn-sm btn-approve" data-approve="'+l.id+'">Aprovar</button></div></div>';
+      });
+    }
+    html += '</div></div>';
+    return html;
+  }
+  function wirePendingApprovals(){
+    document.querySelectorAll('[data-approve]').forEach(function(b){ b.addEventListener('click', function(){ respondLeave(b.getAttribute('data-approve'), 'aprovado'); }); });
+    document.querySelectorAll('[data-reject]').forEach(function(b){ b.addEventListener('click', function(){ respondLeave(b.getAttribute('data-reject'), 'rejeitado'); }); });
+  }
+
+  function viewTeamCalendar(){
+    return '<div class="page-head"><div><h2>Calendário da Equipa</h2><p>Vista mensal para controlo de sobreposição de ausências.</p></div></div>' + calendarWidget();
+  }
+  function wireTeamCalendar(){
+    var prev = document.getElementById('cal-prev'), next = document.getElementById('cal-next');
+    if(prev) prev.addEventListener('click', function(){ calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderMain(); });
+    if(next) next.addEventListener('click', function(){ calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderMain(); });
+  }
+
+  function viewReports(){
+    var year = new Date().getFullYear();
+    var approved = state.leaves.filter(function(l){return l.status==='aprovado';});
+    var pending = state.leaves.filter(function(l){return l.status==='pendente';});
+    var daysFerias = approved.filter(function(l){return l.type==='ferias';}).reduce(function(s,l){return s+l.days;},0);
+    var daysBaixa = approved.filter(function(l){return l.type==='baixa';}).reduce(function(s,l){return s+l.days;},0);
+    var html = '<div class="page-head"><div><h2>Relatórios & Estatísticas</h2><p>Mapa de férias de '+year+'.</p></div><button class="btn btn-primary" id="export-csv">Exportar CSV</button></div>';
+    html += '<div class="stat-row">'+
+      '<div class="stat-card"><div class="stat-num">'+approved.length+'</div><div class="stat-label">Ausências aprovadas</div></div>'+
+      '<div class="stat-card"><div class="stat-num">'+pending.length+'</div><div class="stat-label">Pendentes</div></div>'+
+      '<div class="stat-card"><div class="stat-num">'+daysFerias+'</div><div class="stat-label">Dias de férias usados</div></div>'+
+      '<div class="stat-card"><div class="stat-num">'+daysBaixa+'</div><div class="stat-label">Dias de baixa usados</div></div>'+
+      '</div>';
+    html += '<div class="panel"><div class="panel-head"><h3>Todos os registos</h3></div><div class="table-wrap"><table><thead><tr><th>Colaborador</th><th>Tipo</th><th>Início</th><th>Fim</th><th>Dias</th><th>Estado</th></tr></thead><tbody>';
+    if(!state.leaves.length){
+      html += '<tr><td colspan="6"><div class="empty">Sem registos ainda.</div></td></tr>';
+    } else {
+      state.leaves.slice().sort(function(a,b){return a.start<b.start?1:-1;}).forEach(function(l){
+        html += '<tr><td>'+esc(l.employeeName)+'</td><td>'+chip(l.type)+'</td><td class="mono">'+fmt(l.start)+'</td><td class="mono">'+fmt(l.end)+'</td><td class="mono">'+l.days+'</td><td>'+statusChip(l.status)+'</td></tr>';
+      });
+    }
+    html += '</tbody></table></div></div>';
+    return html;
+  }
+  function wireReports(){
+    var btn = document.getElementById('export-csv');
+    if(btn) btn.addEventListener('click', exportLeavesCsv);
+  }
+  function exportLeavesCsv(){
+    var rows = [['Colaborador','Tipo','Início','Fim','Dias','Estado']];
+    state.leaves.slice().sort(function(a,b){return a.start<b.start?-1:1;}).forEach(function(l){
+      rows.push([l.employeeName, chipLabel(l.type), l.start, l.end, l.days, l.status]);
+    });
+    var csv = rows.map(function(r){
+      return r.map(function(v){ v=String(v==null?'':v); return /[",\n;]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v; }).join(';');
+    }).join('\r\n');
+    var blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8;'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'mapa-de-ferias-'+todayIso()+'.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function viewSettings(){
+    return '<div class="page-head"><div><h2>Configurações</h2><p>Feriados nacionais/locais e regras da empresa.</p></div></div>'+
+      '<div class="panel"><div class="panel-body pad"><div class="empty">Em breve — vais poder definir feriados e regras específicas da empresa aqui.</div></div></div>';
+  }
+
+  function viewHelp(){
+    return '<div class="page-head"><div><h2>Ajuda & Políticas</h2><p>Como funciona o Mapa de Férias.</p></div></div>'+
+      '<div class="panel"><div class="panel-body pad">'+
+      '<p style="margin:0 0 14px;">As férias contam apenas dias úteis (segunda a sexta); as baixas contam todos os dias do período. Ambos são calculados por ano civil.</p>'+
+      '<p style="margin:0 0 14px;">Quando um colaborador marca uma ausência, fica <strong>pendente</strong> até um gestor aprovar ou rejeitar. Quando é o próprio gestor a marcar, fica logo aprovada.</p>'+
+      '<p style="margin:0;">Para dúvidas sobre a política de férias da tua empresa, contacta o teu responsável de RH.</p>'+
+      '</div></div>';
+  }
+
+  function viewJustificativos(){
+    return '<div class="page-head"><div><h2>Justificativos</h2><p>Atestados médicos e comprovativos de dispensa.</p></div></div>'+
+      '<div class="panel"><div class="panel-body pad"><div class="empty">Em breve — vais poder anexar aqui atestados médicos e outros comprovativos associados aos teus pedidos.</div></div></div>';
   }
 
   function viewHome(){
@@ -711,9 +918,13 @@
     document.getElementById('login-view').classList.remove('hidden');
   });
 
-  document.querySelectorAll('.nav-btn[data-view]').forEach(function(btn){
-    btn.addEventListener('click', function(){ currentView = btn.getAttribute('data-view'); renderNav(); renderMain(); });
-  });
+  document.getElementById('hamburger-btn').innerHTML = icon('menu');
+  document.getElementById('drawer-close').innerHTML = icon('x');
+  document.getElementById('hamburger-btn').addEventListener('click', openDrawer);
+  document.getElementById('topbar-avatar').addEventListener('click', openDrawer);
+  document.getElementById('drawer-close').addEventListener('click', closeDrawer);
+  document.getElementById('drawer-backdrop').addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', function(ev){ if(ev.key==='Escape' && drawerOpen) closeDrawer(); });
 
   async function enterApp(){
     await loadState();
