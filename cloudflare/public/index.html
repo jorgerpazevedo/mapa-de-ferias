@@ -171,6 +171,7 @@
   .chip-pendente{background:var(--pending-bg); color:var(--pending);}
   .chip-aprovado{background:var(--moss-bg); color:var(--moss);}
   .chip-rejeitado{background:var(--rose-bg); color:var(--rose);}
+  .chip-neutral{background:var(--surface-2); color:var(--ink-faint);}
   .chip-row{display:flex; gap:6px; flex-wrap:wrap;}
 
   .nav-badge{margin-left:auto; background:var(--rose); color:#fff; font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; line-height:1.5; font-family:var(--font-mono);}
@@ -250,6 +251,14 @@
   .toast.show{opacity:1; transform:translateX(-50%) translateY(-4px);}
 
   .icon-btn{width:30px;height:30px;border-radius:8px; border:1px solid var(--sand); background:var(--paper); display:flex; align-items:center; justify-content:center; color:var(--ink-soft); font-size:14px;}
+
+  .search-input-wrap{position:relative; max-width:280px; width:100%;}
+  .search-input-wrap svg{position:absolute; left:11px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--ink-faint);}
+  .search-input-wrap input{width:100%; padding:9px 12px 9px 34px; border-radius:9px; border:1px solid var(--sand); background:var(--paper); color:var(--ink); font-size:13.5px;}
+  .search-input-wrap input:focus{border-color:var(--accent);}
+  .status-detail{font-size:11.5px; color:var(--ink-faint); margin-top:2px;}
+  .table-foot{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 20px; border-top:1px solid var(--sand); font-size:12.5px; color:var(--ink-faint); flex-wrap:wrap;}
+  .table-foot .pager{display:flex; align-items:center; gap:6px;}
   .icon-btn:hover{background:var(--surface-2);}
 </style>
 </head>
@@ -315,6 +324,9 @@
   var currentView = 'home';
   var calMonth = new Date().getMonth();
   var calYear = new Date().getFullYear();
+  var teamSearch = '';
+  var teamPage = 0;
+  var TEAM_PAGE_SIZE = 8;
 
   function todayIso(){ return new Date().toISOString().slice(0,10); }
   function fmt(iso){ if(!iso) return '—'; var p = iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
@@ -406,6 +418,50 @@
     return '<span class="chip chip-aprovado">Aprovado</span>';
   }
 
+  function employeeCurrentStatus(empId){
+    var rows = state.leaves.filter(function(l){return l.employeeId===empId;});
+    var today = todayIso();
+    var pending = rows.filter(function(l){return l.status==='pendente';}).sort(function(a,b){return a.start<b.start?-1:1;})[0];
+    if(pending) return {chip:'<span class="chip chip-pendente">Pendente</span>', detail: chipLabel(pending.type)+' · '+fmt(pending.start)+' – '+fmt(pending.end)};
+    var current = rows.find(function(l){return l.status==='aprovado' && l.start<=today && today<=l.end;});
+    if(current) return {chip:'<span class="chip chip-aprovado">Em curso</span>', detail: chipLabel(current.type)+' até '+fmt(current.end)};
+    var future = rows.filter(function(l){return l.status==='aprovado' && l.start>today;}).sort(function(a,b){return a.start<b.start?-1:1;})[0];
+    if(future) return {chip:'<span class="chip chip-aprovado">Aprovado</span>', detail: fmt(future.start)+' – '+fmt(future.end)};
+    return {chip:'<span class="chip chip-neutral">Sem pedido ativo</span>', detail:'—'};
+  }
+
+  function teamStatusPanel(){
+    var q = teamSearch.trim().toLowerCase();
+    var filtered = state.employees.filter(function(e){ return !q || e.name.toLowerCase().indexOf(q)!==-1; });
+    var totalPages = Math.max(1, Math.ceil(filtered.length / TEAM_PAGE_SIZE));
+    if(teamPage>=totalPages) teamPage = totalPages-1;
+    if(teamPage<0) teamPage = 0;
+    var pageRows = filtered.slice(teamPage*TEAM_PAGE_SIZE, teamPage*TEAM_PAGE_SIZE+TEAM_PAGE_SIZE);
+
+    var html = '<div class="panel"><div class="panel-head"><h3>Colaboradores</h3>'+
+      '<div class="search-input-wrap">'+icon('search')+'<input type="text" id="team-search-input" placeholder="Pesquisar por nome…" value="'+esc(teamSearch)+'"></div>'+
+      '</div><div class="table-wrap"><table><thead><tr><th>Colaborador</th><th>Estado do pedido</th><th></th></tr></thead><tbody>';
+    if(pageRows.length===0){
+      html += '<tr><td colspan="3"><div class="empty">Nenhum colaborador encontrado.</div></td></tr>';
+    } else {
+      pageRows.forEach(function(e){
+        var st = employeeCurrentStatus(e.id);
+        var isPending = st.chip.indexOf('chip-pendente')!==-1;
+        var pendingLeave = isPending ? state.leaves.filter(function(l){return l.employeeId===e.id && l.status==='pendente';}).sort(function(a,b){return a.start<b.start?-1:1;})[0] : null;
+        html += '<tr><td><div class="list-item-main"><div class="avatar">'+esc(initials(e.name))+'</div><div><div class="li-name">'+esc(e.name)+'</div><div class="li-sub">'+esc(e.contact||'@'+e.username)+'</div></div></div></td>'+
+          '<td>'+st.chip+'<div class="status-detail">'+esc(st.detail)+'</div></td>'+
+          '<td><div class="row-actions">'+
+          (pendingLeave ? '<button class="btn btn-sm btn-reject" data-reject="'+pendingLeave.id+'">Rejeitar</button><button class="btn btn-sm btn-approve" data-approve="'+pendingLeave.id+'">Aprovar</button>' : '<button class="btn btn-ghost btn-sm" data-view-emp="'+e.id+'">Ver perfil</button>')+
+          '</div></td></tr>';
+      });
+    }
+    html += '</tbody></table></div>';
+    html += '<div class="table-foot"><span>'+(filtered.length===0?0:teamPage*TEAM_PAGE_SIZE+1)+'–'+Math.min(filtered.length, teamPage*TEAM_PAGE_SIZE+TEAM_PAGE_SIZE)+' de '+filtered.length+' colaboradores</span>'+
+      '<div class="pager"><button class="icon-btn" id="team-prev" '+(teamPage<=0?'disabled':'')+'>‹</button><span>'+(teamPage+1)+' / '+totalPages+'</span><button class="icon-btn" id="team-next" '+(teamPage>=totalPages-1?'disabled':'')+'>›</button></div></div>';
+    html += '</div>';
+    return html;
+  }
+
   function balanceCard(person, title){
     var b = person.balances;
     var vUsed=b.ferias.aprovado, vPending=b.ferias.pendente, vTotal=person.vacationDaysTotal, vRemain=vTotal-vUsed;
@@ -442,7 +498,8 @@
     barChart: '<line x1="5" y1="20" x2="5" y2="12"/><line x1="12" y1="20" x2="12" y2="6"/><line x1="19" y1="20" x2="19" y2="15"/><line x1="3" y1="21" x2="21" y2="21"/>',
     users: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.6"/><path d="M15.7 20a4.3 4.3 0 0 1 5.3-4.2"/>',
     settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.97 7.97 0 0 0 0-2l2-1.6-2-3.4-2.4.8a8 8 0 0 0-1.7-1L14.8 3h-4l-.5 2.8a8 8 0 0 0-1.7 1l-2.4-.8-2 3.4L6 12a7.97 7.97 0 0 0 0 2l-2 1.6 2 3.4 2.4-.8a8 8 0 0 0 1.7 1l.5 2.8h4l.5-2.8a8 8 0 0 0 1.7-1l2.4.8 2-3.4-2-1.6z"/>',
-    help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.7 2.2c-.9.5-1.2 1-1.2 2.1"/><line x1="12" y1="17" x2="12" y2="17.01"/>'
+    help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.7 2.2c-.9.5-1.2 1-1.2 2.1"/><line x1="12" y1="17" x2="12" y2="17.01"/>',
+    search: '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/>'
   };
   function icon(name){
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(ICON_PATHS[name]||'')+'</svg>';
@@ -662,6 +719,10 @@
       html += '</div></div>';
     }
 
+    if(me.role==='gestor'){
+      html += teamStatusPanel();
+    }
+
     html += '<div class="profile-grid">';
     html += balanceCard(me, 'Saldo '+new Date().getFullYear());
     html += calendarWidget();
@@ -694,6 +755,26 @@
     var prev = document.getElementById('cal-prev'), next = document.getElementById('cal-next');
     if(prev) prev.addEventListener('click', function(){ calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderMain(); });
     if(next) next.addEventListener('click', function(){ calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderMain(); });
+
+    var searchInput = document.getElementById('team-search-input');
+    if(searchInput){
+      searchInput.addEventListener('input', function(){ teamSearch = searchInput.value; teamPage = 0; renderMain(); refocusTeamSearch(); });
+    }
+    var teamPrev = document.getElementById('team-prev'), teamNext = document.getElementById('team-next');
+    if(teamPrev) teamPrev.addEventListener('click', function(){ teamPage--; renderMain(); });
+    if(teamNext) teamNext.addEventListener('click', function(){ teamPage++; renderMain(); });
+    document.querySelectorAll('[data-view-emp]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var emp = state.employees.find(function(e){return e.id===btn.getAttribute('data-view-emp');});
+        currentView='team'; render();
+        openEmployeeModal(emp);
+      });
+    });
+  }
+
+  function refocusTeamSearch(){
+    var el = document.getElementById('team-search-input');
+    if(el){ el.focus(); var v=el.value; el.value=''; el.value=v; }
   }
 
   async function respondLeave(id, status){
