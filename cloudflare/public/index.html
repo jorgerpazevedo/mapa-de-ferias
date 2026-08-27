@@ -209,6 +209,12 @@
 
   .empty{padding:28px 10px; text-align:center; color:var(--ink-faint); font-size:13.5px;}
 
+  .empty-state{display:flex; flex-direction:column; align-items:center; text-align:center; gap:12px; padding:52px 24px;}
+  .empty-state-icon{width:48px; height:48px; border-radius:14px; background:var(--surface-2); color:var(--ink-faint); display:flex; align-items:center; justify-content:center;}
+  .empty-state-icon svg{width:22px; height:22px;}
+  .empty-state h4{font-family:var(--font-display); font-size:16px; font-weight:600; margin:0;}
+  .empty-state p{font-size:13px; color:var(--ink-soft); max-width:320px; margin:0; line-height:1.55;}
+
   .list-item{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 10px; border-bottom:1px solid var(--sand);}
   .list-item:last-child{border-bottom:none;}
   .list-item-main{display:flex; align-items:center; gap:12px; min-width:0;}
@@ -602,9 +608,13 @@
     URL.revokeObjectURL(url);
   }
 
+  function emptyState(iconName, title, desc){
+    return '<div class="empty-state"><div class="empty-state-icon">'+icon(iconName)+'</div><h4>'+esc(title)+'</h4><p>'+esc(desc)+'</p></div>';
+  }
+
   function viewSettings(){
     return '<div class="page-head"><div><h2>Configurações</h2><p>Feriados nacionais/locais e regras da empresa.</p></div></div>'+
-      '<div class="panel"><div class="panel-body pad"><div class="empty">Em breve — vais poder definir feriados e regras específicas da empresa aqui.</div></div></div>';
+      '<div class="panel"><div class="panel-body pad">'+emptyState('settings','Ainda sem configurações personalizadas','Em breve vais poder definir feriados nacionais e locais, e regras específicas da empresa (ex.: dias mínimos de aviso, limites de sobreposição de férias).')+'</div></div>';
   }
 
   function viewHelp(){
@@ -618,7 +628,7 @@
 
   function viewJustificativos(){
     return '<div class="page-head"><div><h2>Justificativos</h2><p>Atestados médicos e comprovativos de dispensa.</p></div></div>'+
-      '<div class="panel"><div class="panel-body pad"><div class="empty">Em breve — vais poder anexar aqui atestados médicos e outros comprovativos associados aos teus pedidos.</div></div></div>';
+      '<div class="panel"><div class="panel-body pad">'+emptyState('paperclip','Ainda não há justificativos','Em breve vais poder anexar aqui atestados médicos e outros comprovativos, associando-os diretamente aos teus pedidos de baixa.')+'</div></div>';
   }
 
   function viewHome(){
