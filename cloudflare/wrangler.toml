@@ -1,0 +1,8 @@
+name = "mapa-de-ferias"
+compatibility_date = "2026-08-01"
+pages_build_output_dir = "public"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "mapa-de-ferias-db"
+database_id = "591c9bb9-67b7-4517-a5d9-b0a0f5c3d7ec"

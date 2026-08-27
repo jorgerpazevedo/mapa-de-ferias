@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mapa de Férias</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#F3F5EF; --surface:#FFFFFF; --surface-2:#EAEDE3;
+    --ink:#16211D; --ink-soft:#57635B; --ink-faint:#8A9089;
+    --accent:#B97423; --accent-ink:#3A2408; --accent-bg:#F3E4CC;
+    --moss:#3F6B52; --moss-bg:#E1EBE4;
+    --rose:#AE4B3F; --rose-bg:#F5E3E0;
+    --pending:#8A6D1D; --pending-bg:#F1E7C9;
+    --sand:#DCD7C8;
+    --shadow:0 1px 2px rgba(22,33,29,.06), 0 10px 28px -14px rgba(22,33,29,.22);
+    --radius:14px;
+    --font-display:'Fraunces', ui-serif, Georgia, serif;
+    --font-body:'Work Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#12160F; --surface:#191F17; --surface-2:#20261D;
+      --ink:#ECE9DF; --ink-soft:#AEB3A6; --ink-faint:#767C71;
+      --accent:#E3A855; --accent-ink:#291805; --accent-bg:#33270F;
+      --moss:#7FAE8F; --moss-bg:#1D2A21;
+      --rose:#E08D7E; --rose-bg:#331E1A;
+      --pending:#E3C568; --pending-bg:#332C14;
+      --sand:#2A3126;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#12160F; --surface:#191F17; --surface-2:#20261D;
+    --ink:#ECE9DF; --ink-soft:#AEB3A6; --ink-faint:#767C71;
+    --accent:#E3A855; --accent-ink:#291805; --accent-bg:#33270F;
+    --moss:#7FAE8F; --moss-bg:#1D2A21;
+    --rose:#E08D7E; --rose-bg:#331E1A;
+    --pending:#E3C568; --pending-bg:#332C14;
+    --sand:#2A3126;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.5);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:var(--font-body); font-size:15px; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:var(--font-display); font-weight:600; text-wrap:balance; margin:0;}
+  .mono{font-family:var(--font-mono); font-variant-numeric:tabular-nums;}
+  button{font-family:inherit; font-size:inherit; cursor:pointer;}
+  input,select{font-family:inherit; font-size:inherit;}
+  a{color:inherit;}
+  ::selection{background:var(--accent-bg);}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:4px;}
+
+  .hidden{display:none !important;}
+
+  #login-view{
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    padding:24px; position:relative; overflow:hidden;
+    background-image: radial-gradient(var(--sand) 1px, transparent 1px);
+    background-size:26px 26px; background-position:-4px -4px;
+  }
+  #login-view::before{
+    content:""; position:absolute; inset:0;
+    background:
+      radial-gradient(600px 400px at 20% 15%, var(--paper) 10%, transparent 60%),
+      radial-gradient(700px 500px at 85% 90%, var(--paper) 5%, transparent 55%);
+    pointer-events:none;
+  }
+  .login-card{
+    position:relative; z-index:1; width:100%; max-width:380px;
+    background:var(--surface); border:1px solid var(--sand);
+    border-radius:20px; padding:36px 32px 30px; box-shadow:var(--shadow);
+  }
+  .login-mark{width:42px;height:42px;border-radius:11px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:18px;}
+  .login-card h1{font-size:26px; margin-bottom:4px;}
+  .login-sub{color:var(--ink-soft); font-size:13.5px; margin-bottom:26px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12.5px; font-weight:600; letter-spacing:.02em; color:var(--ink-soft); margin-bottom:6px; text-transform:uppercase;}
+  .field input, .field select{width:100%; padding:11px 13px; border-radius:10px; border:1px solid var(--sand); background:var(--paper); color:var(--ink);}
+  .field input:focus, .field select:focus{border-color:var(--accent);}
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:11px 18px; border-radius:10px; border:1px solid transparent; font-weight:600; font-size:14.5px; transition:transform .08s ease, opacity .15s ease;}
+  .btn:active{transform:scale(.98);}
+  .btn-primary{background:var(--accent); color:var(--accent-ink);}
+  .btn-primary:hover{opacity:.92;}
+  .btn-primary:disabled{opacity:.5; cursor:not-allowed;}
+  .btn-ghost{background:transparent; border-color:var(--sand); color:var(--ink);}
+  .btn-ghost:hover{background:var(--surface-2);}
+  .btn-block{width:100%;}
+  .btn-sm{padding:7px 12px; font-size:13px; border-radius:8px;}
+  .login-error{background:var(--rose-bg); color:var(--rose); font-size:13px; padding:10px 12px; border-radius:10px; margin-bottom:14px; display:none;}
+  .login-hint{margin-top:20px; font-size:12px; color:var(--ink-faint); line-height:1.6;}
+
+  #app-view{min-height:100vh; display:flex;}
+  .sidebar{width:230px; flex-shrink:0; background:var(--surface); border-right:1px solid var(--sand); display:flex; flex-direction:column; padding:22px 16px;}
+  .brand{display:flex; align-items:center; gap:10px; padding:0 6px 22px; border-bottom:1px solid var(--sand); margin-bottom:16px;}
+  .brand-mark{width:30px;height:30px;border-radius:9px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:15px;}
+  .brand-name{font-family:var(--font-display); font-weight:600; font-size:16.5px;}
+  .nav-btn{display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:10px 12px; border-radius:10px; background:transparent; border:none; color:var(--ink-soft); font-weight:500; font-size:14px; margin-bottom:2px;}
+  .nav-btn:hover{background:var(--surface-2); color:var(--ink);}
+  .nav-btn.active{background:var(--accent-bg); color:var(--accent-ink);}
+  .sidebar-foot{margin-top:auto; padding-top:16px; border-top:1px solid var(--sand);}
+  .who{padding:0 6px 10px;}
+  .who-name{font-weight:600; font-size:13.5px;}
+  .who-role{font-size:12px; color:var(--ink-faint);}
+
+  .main{flex:1; min-width:0; padding:32px 40px 60px; max-width:1080px;}
+  .page-head{display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:26px; flex-wrap:wrap;}
+  .page-head h2{font-size:24px;}
+  .page-head p{color:var(--ink-soft); font-size:13.5px; margin-top:4px;}
+
+  .stat-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:28px;}
+  .stat-card{background:var(--surface); border:1px solid var(--sand); border-radius:var(--radius); padding:18px 20px; box-shadow:var(--shadow);}
+  .stat-num{font-family:var(--font-display); font-size:30px; font-weight:600; line-height:1;}
+  .stat-label{font-size:12.5px; color:var(--ink-soft); margin-top:6px;}
+
+  .panel{background:var(--surface); border:1px solid var(--sand); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:24px;}
+  .panel-head{display:flex; align-items:center; justify-content:space-between; padding:18px 20px; border-bottom:1px solid var(--sand); gap:12px; flex-wrap:wrap;}
+  .panel-head h3{font-size:16px;}
+  .panel-body{padding:6px 20px 18px;}
+  .panel-body.pad{padding:20px;}
+
+  table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  thead th{text-align:left; font-size:11px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-faint); font-weight:600; padding:10px 10px; border-bottom:1px solid var(--sand);}
+  tbody td{padding:12px 10px; border-bottom:1px solid var(--sand); vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  .emp-name{font-weight:600;}
+  .emp-sub{font-size:12px; color:var(--ink-faint); margin-top:2px;}
+  .bal{font-family:var(--font-mono); font-size:13px;}
+  .bal .low{color:var(--rose); font-weight:600;}
+  .row-actions{display:flex; gap:6px; flex-wrap:wrap;}
+  .table-wrap{overflow-x:auto;}
+
+  .chip{display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:11.5px; font-weight:600;}
+  .chip-ferias{background:var(--accent-bg); color:var(--accent-ink);}
+  .chip-baixa{background:var(--moss-bg); color:var(--moss);}
+  .chip-pendente{background:var(--pending-bg); color:var(--pending);}
+  .chip-aprovado{background:var(--moss-bg); color:var(--moss);}
+  .chip-rejeitado{background:var(--rose-bg); color:var(--rose);}
+  .chip-row{display:flex; gap:6px; flex-wrap:wrap;}
+
+  .nav-badge{margin-left:auto; background:var(--rose); color:#fff; font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; line-height:1.5; font-family:var(--font-mono);}
+  .panel-attention{border-color:var(--pending);}
+  .panel-attention .panel-head{border-bottom-color:var(--pending-bg);}
+  .req-row{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 10px; border-bottom:1px solid var(--sand); flex-wrap:wrap;}
+  .req-row:last-child{border-bottom:none;}
+  .req-actions{display:flex; gap:8px; flex-shrink:0;}
+  .btn-approve{background:var(--moss-bg); color:var(--moss);}
+  .btn-reject{background:var(--rose-bg); color:var(--rose);}
+  .pending-note{font-size:11.5px; color:var(--pending); font-weight:600; margin-top:2px;}
+
+  .ring-wrap{position:relative; width:56px; height:56px; flex-shrink:0;}
+  .ring-wrap svg{width:100%; height:100%; transform:rotate(-90deg);}
+  .ring-track{fill:none; stroke:var(--surface-2);}
+  .ring-fill{fill:none; stroke-linecap:round;}
+  .ring-fill.accent{stroke:var(--accent);}
+  .ring-fill.moss{stroke:var(--moss);}
+  .ring-label{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:12px; font-weight:700; color:var(--ink);}
+
+  .cal-nav{display:flex; gap:4px;}
+  .cal-nav button{width:26px; height:26px; border-radius:7px; border:1px solid var(--sand); background:var(--paper); color:var(--ink-soft); display:flex; align-items:center; justify-content:center;}
+  .cal-nav button:hover{background:var(--surface-2);}
+  .cal-month{text-align:center; font-weight:600; font-size:14px; margin-bottom:12px;}
+  .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px;}
+  .cal-dow{text-align:center; font-size:10px; text-transform:uppercase; letter-spacing:.02em; color:var(--ink-faint); font-weight:600; padding-bottom:2px;}
+  .cal-day{aspect-ratio:1; display:flex; align-items:center; justify-content:center; border-radius:8px; font-size:12px; font-family:var(--font-mono); color:var(--ink-soft);}
+  .cal-day.empty{visibility:hidden;}
+  .cal-day.today{box-shadow:inset 0 0 0 1.5px var(--ink); font-weight:700; color:var(--ink);}
+  .cal-day.ferias{background:var(--accent-bg); color:var(--accent-ink); font-weight:600;}
+  .cal-day.baixa{background:var(--moss-bg); color:var(--moss); font-weight:600;}
+  .cal-day.pendente{background:var(--pending-bg); color:var(--pending); font-weight:600; box-shadow:inset 0 0 0 1.5px var(--pending);}
+  .cal-legend{display:flex; gap:14px; flex-wrap:wrap; margin-top:14px; font-size:11.5px; color:var(--ink-soft);}
+  .cal-legend span{display:inline-flex; align-items:center; gap:5px;}
+  .cal-dot{width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0;}
+
+  .empty{padding:28px 10px; text-align:center; color:var(--ink-faint); font-size:13.5px;}
+
+  .list-item{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 10px; border-bottom:1px solid var(--sand);}
+  .list-item:last-child{border-bottom:none;}
+  .list-item-main{display:flex; align-items:center; gap:12px; min-width:0;}
+  .avatar{width:34px;height:34px;border-radius:50%; background:var(--surface-2); color:var(--ink-soft); display:flex; align-items:center; justify-content:center; font-weight:600; font-size:13px; flex-shrink:0;}
+  .li-name{font-weight:600; font-size:13.5px;}
+  .li-sub{font-size:12px; color:var(--ink-faint);}
+
+  .profile-grid{display:grid; grid-template-columns:1.1fr 1fr; gap:20px;}
+  @media (max-width:820px){ .profile-grid{grid-template-columns:1fr;} .sidebar{width:76px;} .brand-name,.nav-btn span.lbl{display:none;} .who{display:none;} .main{padding:24px 18px 50px;} }
+
+  .balance-card{padding:20px;}
+  .balance-row{display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid var(--sand);}
+  .balance-row:last-child{border-bottom:none;}
+  .balance-title{font-weight:600; font-size:14px;}
+  .balance-sub{font-size:12px; color:var(--ink-faint); margin-top:2px;}
+  .balance-figure{font-family:var(--font-mono); font-size:20px; font-weight:600; text-align:right;}
+  .balance-figure small{display:block; font-size:11px; font-weight:500; color:var(--ink-faint); font-family:var(--font-body);}
+
+  .field-row{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .modal-backdrop{position:fixed; inset:0; background:rgba(15,20,14,.45); display:flex; align-items:center; justify-content:center; padding:20px; z-index:50;}
+  .modal{width:100%; max-width:440px; background:var(--surface); border-radius:18px; border:1px solid var(--sand); box-shadow:var(--shadow); padding:26px 26px 22px; max-height:88vh; overflow-y:auto;}
+  .modal h3{font-size:18px; margin-bottom:4px;}
+  .modal-sub{font-size:13px; color:var(--ink-soft); margin-bottom:18px;}
+  .modal-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:20px;}
+  .form-error{background:var(--rose-bg); color:var(--rose); font-size:13px; padding:9px 11px; border-radius:9px; margin-bottom:12px; display:none;}
+  .form-note{font-size:12px; color:var(--ink-faint); margin-top:4px;}
+  .segment{display:flex; gap:8px; margin-bottom:14px;}
+  .segment button{flex:1; padding:9px; border-radius:9px; border:1px solid var(--sand); background:var(--paper); color:var(--ink-soft); font-weight:600; font-size:13.5px;}
+  .segment button.active{background:var(--accent-bg); color:var(--accent-ink); border-color:var(--accent-bg);}
+  .segment button.active.baixa{background:var(--moss-bg); color:var(--moss); border-color:var(--moss-bg);}
+
+  .toast{position:fixed; bottom:22px; left:50%; transform:translateX(-50%); background:var(--ink); color:var(--paper); padding:11px 18px; border-radius:10px; font-size:13.5px; box-shadow:var(--shadow); z-index:80; opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(-4px);}
+
+  .icon-btn{width:30px;height:30px;border-radius:8px; border:1px solid var(--sand); background:var(--paper); display:flex; align-items:center; justify-content:center; color:var(--ink-soft); font-size:14px;}
+  .icon-btn:hover{background:var(--surface-2);}
+</style>
+</head>
+<body>
+
+<div id="root">
+  <div id="login-view">
+    <div class="login-card">
+      <div class="login-mark">🌴</div>
+      <h1>Mapa de Férias</h1>
+      <p class="login-sub">Inicia sessão para consultar o teu saldo ou marcar ausências.</p>
+      <div class="login-error" id="login-error"></div>
+      <form id="login-form">
+        <div class="field"><label for="login-user">Utilizador</label><input id="login-user" type="text" autocomplete="username" required></div>
+        <div class="field"><label for="login-pass">Palavra-passe</label><input id="login-pass" type="password" autocomplete="current-password" required></div>
+        <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+      </form>
+      <div class="login-hint">Administrador: <strong class="mono">admin</strong> / <strong class="mono">admin</strong> · Funcionário (exemplo): <strong class="mono">user</strong> / <strong class="mono">user</strong></div>
+    </div>
+  </div>
+
+  <div id="app-view" class="hidden">
+    <div class="sidebar">
+      <div class="brand"><div class="brand-mark">🌴</div><div class="brand-name">Mapa de Férias</div></div>
+      <button class="nav-btn active" data-view="home"><span>🏠</span><span class="lbl">Início</span></button>
+      <button class="nav-btn" data-view="team" id="nav-team"><span>👥</span><span class="lbl">Colaboradores</span></button>
+      <button class="nav-btn" data-view="mine"><span>🗓️</span><span class="lbl">As minhas férias</span></button>
+      <div class="sidebar-foot">
+        <div class="who"><div class="who-name" id="who-name">—</div><div class="who-role" id="who-role">—</div></div>
+        <button class="btn btn-ghost btn-block btn-sm" id="logout-btn">Sair</button>
+      </div>
+    </div>
+    <div class="main" id="main"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  var state = null;
+  var currentView = 'home';
+  var calMonth = new Date().getMonth();
+  var calYear = new Date().getFullYear();
+
+  function todayIso(){ return new Date().toISOString().slice(0,10); }
+  function fmt(iso){ if(!iso) return '—'; var p = iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function parseIso(iso){ var p = iso.split('-').map(Number); return new Date(p[0], p[1]-1, p[2]); }
+  function calendarDaysCount(s,e){ return Math.round((parseIso(e)-parseIso(s))/86400000)+1; }
+  function businessDaysCount(s,e){
+    var sd=parseIso(s), ed=parseIso(e); if(ed<sd) return 0;
+    var count=0, d=new Date(sd);
+    while(d<=ed){ var dow=d.getDay(); if(dow!==0 && dow!==6) count++; d.setDate(d.getDate()+1); }
+    return count;
+  }
+  function initials(name){ var p=(name||'?').trim().split(/\s+/); return ((p[0]||'')[0]||'')+((p[p.length-1]||'')[0]||''); }
+
+  async function api(path, opts){
+    opts = opts || {};
+    var headers = Object.assign({'Content-Type':'application/json'}, opts.headers||{});
+    var res = await fetch('/api/'+path, Object.assign({}, opts, {headers: headers}));
+    var data = {};
+    try { data = await res.json(); } catch(e){}
+    if(!res.ok) throw new Error(data.error || ('Erro '+res.status));
+    return data;
+  }
+
+  function showToast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(showToast._h);
+    showToast._h = setTimeout(function(){ t.classList.remove('show'); }, 2600);
+  }
+
+  async function loadState(){
+    state = await api('state');
+    render();
+  }
+
+  function ringSvg(pct, cls){
+    pct = Math.max(0, Math.min(100, pct));
+    var r=22, c=2*Math.PI*r, dash=c*pct/100;
+    return '<div class="ring-wrap"><svg viewBox="0 0 56 56">'+
+      '<circle class="ring-track" cx="28" cy="28" r="'+r+'" stroke-width="6"></circle>'+
+      '<circle class="ring-fill '+cls+'" cx="28" cy="28" r="'+r+'" stroke-width="6" stroke-dasharray="'+c.toFixed(2)+'" stroke-dashoffset="'+(c-dash).toFixed(2)+'"></circle>'+
+      '</svg><div class="ring-label">'+Math.round(pct)+'%</div></div>';
+  }
+
+  var MONTH_NAMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  var DOW_NAMES = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+  function isoFromYMD(y,m,d){ function pad(n){return (n<10?'0':'')+n;} return y+'-'+pad(m+1)+'-'+pad(d); }
+  function leavesOnDate(dateIso){
+    return state.leaves.filter(function(l){
+      if(l.status==='rejeitado') return false;
+      return parseIso(l.start) <= parseIso(dateIso) && parseIso(dateIso) <= parseIso(l.end);
+    });
+  }
+  function calendarWidget(){
+    var y=calYear, m=calMonth;
+    var first = new Date(y,m,1);
+    var startDow = (first.getDay()+6)%7;
+    var daysInMonth = new Date(y,m+1,0).getDate();
+    var todayStr = todayIso();
+
+    var html = '<div class="panel"><div class="panel-head"><h3>Calendário</h3><div class="cal-nav"><button type="button" id="cal-prev">‹</button><button type="button" id="cal-next">›</button></div></div><div class="panel-body pad">';
+    html += '<div class="cal-month">'+MONTH_NAMES[m]+' '+y+'</div><div class="cal-grid">';
+    DOW_NAMES.forEach(function(d){ html += '<div class="cal-dow">'+d+'</div>'; });
+    for(var i=0;i<startDow;i++) html += '<div class="cal-day empty"></div>';
+    for(var d=1; d<=daysInMonth; d++){
+      var iso = isoFromYMD(y,m,d);
+      var dayLeaves = leavesOnDate(iso);
+      var cls = 'cal-day';
+      if(iso===todayStr) cls += ' today';
+      if(dayLeaves.length){
+        var hasFerias = dayLeaves.some(function(l){return l.type==='ferias' && l.status==='aprovado';});
+        var hasBaixa = dayLeaves.some(function(l){return l.type==='baixa' && l.status==='aprovado';});
+        var hasPend = dayLeaves.some(function(l){return l.status==='pendente';});
+        if(hasFerias) cls += ' ferias'; else if(hasBaixa) cls += ' baixa'; else if(hasPend) cls += ' pendente';
+      }
+      var titleAttr = dayLeaves.length ? esc(dayLeaves.map(function(l){return l.employeeName;}).join(', ')) : '';
+      html += '<div class="'+cls+'" title="'+titleAttr+'">'+d+'</div>';
+    }
+    html += '</div><div class="cal-legend"><span><span class="cal-dot" style="background:var(--accent)"></span>Férias</span><span><span class="cal-dot" style="background:var(--moss)"></span>Baixa</span><span><span class="cal-dot" style="background:var(--pending)"></span>Pendente</span></div></div></div>';
+    return html;
+  }
+
+  function chipLabel(type){ return type==='ferias' ? 'Férias' : 'Baixa'; }
+  function chip(type){ return type==='ferias' ? '<span class="chip chip-ferias">Férias</span>' : '<span class="chip chip-baixa">Baixa</span>'; }
+  function statusChip(status){
+    if(status==='pendente') return '<span class="chip chip-pendente">Pendente</span>';
+    if(status==='rejeitado') return '<span class="chip chip-rejeitado">Rejeitado</span>';
+    return '<span class="chip chip-aprovado">Aprovado</span>';
+  }
+
+  function balanceCard(person, title){
+    var b = person.balances;
+    var vUsed=b.ferias.aprovado, vPending=b.ferias.pendente, vTotal=person.vacationDaysTotal, vRemain=vTotal-vUsed;
+    var sUsed=b.baixa.aprovado, sPending=b.baixa.pendente, sTotal=person.sickDaysTotal, sRemain=sTotal-sUsed;
+    var vPct = vTotal>0 ? (vUsed/vTotal*100) : 0;
+    var sPct = sTotal>0 ? (sUsed/sTotal*100) : 0;
+    return '<div class="panel"><div class="panel-head"><h3>'+(title||'Saldo')+'</h3></div><div class="balance-card">'+
+      '<div class="balance-row"><div style="display:flex;align-items:center;gap:14px;">'+ringSvg(vPct,'accent')+'<div><div class="balance-title">Férias</div><div class="balance-sub">'+vUsed+' de '+vTotal+' dias úteis usados</div>'+(vPending>0?'<div class="pending-note">+'+vPending+' pendente'+(vPending!==1?'s':'')+' de aprovação</div>':'')+'</div></div>'+
+      '<div class="balance-figure '+(vRemain<0?'low':'')+'"'+(vRemain<0?' style="color:var(--rose)"':'')+'>'+vRemain+'<small>restam</small></div></div>'+
+      '<div class="balance-row"><div style="display:flex;align-items:center;gap:14px;">'+ringSvg(sPct,'moss')+'<div><div class="balance-title">Baixas</div><div class="balance-sub">'+sUsed+' de '+sTotal+' dias usados</div>'+(sPending>0?'<div class="pending-note">+'+sPending+' pendente'+(sPending!==1?'s':'')+' de aprovação</div>':'')+'</div></div>'+
+      '<div class="balance-figure"'+(sRemain<0?' style="color:var(--rose)"':'')+'>'+sRemain+'<small>restam</small></div></div>'+
+      '<div class="balance-row"><div><div class="balance-title">Antiguidade</div><div class="balance-sub">desde '+fmt(person.startDate)+'</div></div><div class="balance-figure">'+yearsOfService(person.startDate)+'<small>anos</small></div></div>'+
+      '</div></div>';
+  }
+  function yearsOfService(startIso){
+    var s=parseIso(startIso), n=new Date();
+    var y=n.getFullYear()-s.getFullYear();
+    if(n.getMonth()<s.getMonth() || (n.getMonth()===s.getMonth() && n.getDate()<s.getDate())) y--;
+    return Math.max(0,y);
+  }
+
+  function currentUser(){ return state ? state.me : null; }
+
+  function render(){
+    var me = currentUser();
+    if(!me) return;
+    document.getElementById('who-name').textContent = me.name;
+    document.getElementById('who-role').textContent = me.role==='gestor' ? 'Gestor' : 'Colaborador';
+    document.getElementById('nav-team').style.display = me.role==='gestor' ? '' : 'none';
+    if(me.role!=='gestor' && currentView==='team') currentView='home';
+    renderNav();
+    renderMain();
+  }
+
+  function renderNav(){
+    document.querySelectorAll('.nav-btn[data-view]').forEach(function(btn){
+      btn.classList.toggle('active', btn.getAttribute('data-view')===currentView);
+    });
+    var me = currentUser();
+    var homeBtn = document.querySelector('.nav-btn[data-view="home"]');
+    var oldBadge = homeBtn.querySelector('.nav-badge');
+    if(oldBadge) oldBadge.remove();
+    if(me && me.role==='gestor'){
+      var n = state.leaves.filter(function(l){return l.status==='pendente';}).length;
+      if(n>0){
+        var badge = document.createElement('span');
+        badge.className='nav-badge'; badge.textContent=n;
+        homeBtn.appendChild(badge);
+      }
+    }
+  }
+
+  function renderMain(){
+    var me = currentUser();
+    var main = document.getElementById('main');
+    if(currentView==='team' && me.role==='gestor'){ main.innerHTML = viewTeam(); wireTeam(); return; }
+    if(currentView==='mine'){ main.innerHTML = viewMine(); wirePersonal(); return; }
+    main.innerHTML = viewHome(); wireHome();
+  }
+
+  function viewHome(){
+    var me = state.me;
+    var today = todayIso();
+    var pending = state.leaves.filter(function(l){return l.status==='pendente';});
+    var onLeaveToday = state.leaves.filter(function(l){return l.status==='aprovado' && l.start<=today && today<=l.end;});
+    var upcoming = state.leaves.filter(function(l){return l.status!=='rejeitado' && l.start>=today;})
+      .sort(function(a,b){return a.start<b.start?-1:1;}).slice(0,8);
+
+    var statCards = '';
+    if(me.role==='gestor'){
+      statCards =
+        '<div class="stat-card"><div class="stat-num">'+state.employees.length+'</div><div class="stat-label">Colaboradores</div></div>'+
+        '<div class="stat-card"><div class="stat-num" style="'+(pending.length>0?'color:var(--pending)':'')+'">'+pending.length+'</div><div class="stat-label">Pedidos pendentes</div></div>'+
+        '<div class="stat-card"><div class="stat-num">'+onLeaveToday.length+'</div><div class="stat-label">Ausentes hoje</div></div>'+
+        '<div class="stat-card"><div class="stat-num">'+upcoming.length+'</div><div class="stat-label">Ausências agendadas</div></div>';
+    }
+
+    var html = '<div class="page-head"><div><h2>Olá, '+esc(me.name.split(' ')[0])+'</h2><p>'+(me.role==='gestor'?'Resumo da equipa e do teu saldo pessoal.':'O teu saldo de férias e baixas.')+'</p></div>'+
+      '<button class="btn btn-primary" id="quick-mark">+ Marcar ausência</button></div>';
+
+    if(statCards) html += '<div class="stat-row">'+statCards+'</div>';
+
+    if(me.role==='gestor' && pending.length>0){
+      html += '<div class="panel panel-attention"><div class="panel-head"><h3>Pedidos pendentes</h3></div><div class="panel-body pad" style="padding-top:2px;">';
+      pending.forEach(function(l){
+        html += '<div class="req-row"><div class="list-item-main"><div class="avatar">'+esc(initials(l.employeeName))+'</div><div><div class="li-name">'+esc(l.employeeName)+'</div><div class="li-sub">'+chipLabel(l.type)+' · '+fmt(l.start)+' – '+fmt(l.end)+' · '+l.days+' dia'+(l.days!==1?'s':'')+'</div></div></div>'+
+          '<div class="req-actions"><button class="btn btn-sm btn-reject" data-reject="'+l.id+'">Rejeitar</button><button class="btn btn-sm btn-approve" data-approve="'+l.id+'">Aprovar</button></div></div>';
+      });
+      html += '</div></div>';
+    }
+
+    html += '<div class="profile-grid">';
+    html += balanceCard(me, 'Saldo '+new Date().getFullYear());
+    html += calendarWidget();
+    html += '</div>';
+
+    html += '<div class="panel"><div class="panel-head"><h3>'+(me.role==='gestor'?'Próximas ausências (equipa)':'As tuas próximas ausências')+'</h3></div><div class="panel-body pad">';
+    var list = me.role==='gestor' ? upcoming : upcoming.filter(function(l){return l.employeeId===me.id;});
+    if(list.length===0){
+      html += '<div class="empty">Sem ausências agendadas.</div>';
+    } else {
+      list.forEach(function(l){
+        html += '<div class="list-item"><div class="list-item-main"><div class="avatar">'+esc(initials(l.employeeName))+'</div><div><div class="li-name">'+esc(l.employeeName)+'</div><div class="li-sub">'+fmt(l.start)+' – '+fmt(l.end)+' · '+l.days+' dia'+(l.days!==1?'s':'')+'</div></div></div>'+
+          '<div class="chip-row">'+chip(l.type)+statusChip(l.status)+'</div></div>';
+      });
+    }
+    html += '</div></div>';
+    return html;
+  }
+
+  function wireHome(){
+    var me = state.me;
+    var btn = document.getElementById('quick-mark');
+    if(btn) btn.addEventListener('click', function(){ openLeaveModal(me.id, me.name); });
+    document.querySelectorAll('[data-approve]').forEach(function(b){
+      b.addEventListener('click', function(){ respondLeave(b.getAttribute('data-approve'), 'aprovado'); });
+    });
+    document.querySelectorAll('[data-reject]').forEach(function(b){
+      b.addEventListener('click', function(){ respondLeave(b.getAttribute('data-reject'), 'rejeitado'); });
+    });
+    var prev = document.getElementById('cal-prev'), next = document.getElementById('cal-next');
+    if(prev) prev.addEventListener('click', function(){ calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderMain(); });
+    if(next) next.addEventListener('click', function(){ calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderMain(); });
+  }
+
+  async function respondLeave(id, status){
+    try{
+      await api('leaves/'+id+'/respond', {method:'POST', body: JSON.stringify({status:status})});
+      showToast(status==='aprovado' ? 'Pedido aprovado.' : 'Pedido rejeitado.');
+      await loadState();
+    }catch(e){ showToast(e.message); }
+  }
+
+  function viewMine(){
+    var me = state.me;
+    var mine = state.leaves.filter(function(l){return l.employeeId===me.id;}).sort(function(a,b){return a.start<b.start?1:-1;});
+
+    var html = '<div class="page-head"><div><h2>As minhas férias</h2><p>Marca novas ausências e consulta o histórico.</p></div>'+
+      '<button class="btn btn-primary" id="mine-mark">+ Marcar ausência</button></div>';
+
+    html += '<div class="profile-grid">';
+    html += balanceCard(me, 'Saldo '+new Date().getFullYear());
+    html += '<div class="panel"><div class="panel-head"><h3>Contacto</h3><button class="btn btn-ghost btn-sm" id="edit-contact">Editar</button></div><div class="panel-body pad">'+
+      '<div class="balance-row"><div class="balance-title">Contacto</div><div>'+esc(me.contact||'—')+'</div></div>'+
+      '<div class="balance-row"><div class="balance-title">Data de início</div><div>'+fmt(me.startDate)+'</div></div>'+
+      '</div></div>';
+    html += '</div>';
+
+    html += '<div class="panel"><div class="panel-head"><h3>Histórico</h3></div><div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Início</th><th>Fim</th><th>Dias</th><th>Estado</th><th></th></tr></thead><tbody>';
+    if(mine.length===0){
+      html += '<tr><td colspan="6"><div class="empty">Ainda não marcaste nenhuma ausência.</div></td></tr>';
+    } else {
+      mine.forEach(function(l){
+        var canCancel = me.role==='gestor' || l.status==='pendente' || l.start>=todayIso();
+        html += '<tr><td>'+chip(l.type)+'</td><td class="mono">'+fmt(l.start)+'</td><td class="mono">'+fmt(l.end)+'</td><td class="mono">'+l.days+'</td><td>'+statusChip(l.status)+'</td>'+
+          '<td>'+(canCancel?'<button class="btn btn-ghost btn-sm" data-cancel="'+l.id+'">Cancelar</button>':'')+'</td></tr>';
+      });
+    }
+    html += '</tbody></table></div></div>';
+    return html;
+  }
+
+  function wirePersonal(){
+    var me = state.me;
+    var b1 = document.getElementById('mine-mark');
+    if(b1) b1.addEventListener('click', function(){ openLeaveModal(me.id, me.name); });
+    var ec = document.getElementById('edit-contact');
+    if(ec) ec.addEventListener('click', openContactModal);
+    document.querySelectorAll('[data-cancel]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        if(!confirm('Cancelar esta ausência?')) return;
+        try{ await api('leaves/'+btn.getAttribute('data-cancel'), {method:'DELETE'}); await loadState(); }
+        catch(e){ showToast(e.message); }
+      });
+    });
+  }
+
+  function viewTeam(){
+    var html = '<div class="page-head"><div><h2>Colaboradores</h2><p>Gere a equipa, saldos e acessos.</p></div>'+
+      '<button class="btn btn-primary" id="add-emp">+ Novo colaborador</button></div>';
+    html += '<div class="panel"><div class="table-wrap"><table><thead><tr><th>Nome</th><th>Início</th><th>Contacto</th><th>Férias</th><th>Baixas</th><th></th></tr></thead><tbody>';
+    state.employees.forEach(function(e){
+      var b = e.balances;
+      var vRemain = e.vacationDaysTotal - b.ferias.aprovado, sRemain = e.sickDaysTotal - b.baixa.aprovado;
+      html += '<tr><td><div class="emp-name">'+esc(e.name)+'</div><div class="emp-sub">'+(e.role==='gestor'?'Gestor':'Colaborador')+' · @'+esc(e.username)+'</div></td>'+
+        '<td class="mono">'+fmt(e.startDate)+'</td>'+
+        '<td>'+esc(e.contact||'—')+'</td>'+
+        '<td class="bal">'+b.ferias.aprovado+'/'+e.vacationDaysTotal+' <span class="'+(vRemain<0?'low':'')+'">('+vRemain+' restam)</span>'+(b.ferias.pendente>0?'<div class="pending-note">+'+b.ferias.pendente+' pend.</div>':'')+'</td>'+
+        '<td class="bal">'+b.baixa.aprovado+'/'+e.sickDaysTotal+' <span class="'+(sRemain<0?'low':'')+'">('+sRemain+' restam)</span>'+(b.baixa.pendente>0?'<div class="pending-note">+'+b.baixa.pendente+' pend.</div>':'')+'</td>'+
+        '<td><div class="row-actions">'+
+          '<button class="icon-btn" title="Marcar ausência" data-mark="'+e.id+'" data-name="'+esc(e.name)+'">🗓️</button>'+
+          '<button class="icon-btn" title="Editar" data-edit="'+e.id+'">✎</button>'+
+          '<button class="icon-btn" title="Remover" data-remove="'+e.id+'">🗑</button>'+
+        '</div></td></tr>';
+    });
+    html += '</tbody></table></div></div>';
+    return html;
+  }
+
+  function wireTeam(){
+    var add = document.getElementById('add-emp');
+    if(add) add.addEventListener('click', function(){ openEmployeeModal(null); });
+    document.querySelectorAll('[data-mark]').forEach(function(btn){
+      btn.addEventListener('click', function(){ openLeaveModal(btn.getAttribute('data-mark'), btn.getAttribute('data-name')); });
+    });
+    document.querySelectorAll('[data-edit]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var emp = state.employees.find(function(e){return e.id===btn.getAttribute('data-edit');});
+        openEmployeeModal(emp);
+      });
+    });
+    document.querySelectorAll('[data-remove]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        var id = btn.getAttribute('data-remove');
+        var emp = state.employees.find(function(e){return e.id===id;});
+        if(!confirm('Remover '+emp.name+' e todo o seu histórico?')) return;
+        try{ await api('employees/'+id, {method:'DELETE'}); await loadState(); }
+        catch(e){ showToast(e.message); }
+      });
+    });
+  }
+
+  function openModal(innerHtml){
+    var wrap = document.createElement('div');
+    wrap.className='modal-backdrop'; wrap.id='modal-backdrop';
+    wrap.innerHTML = '<div class="modal">'+innerHtml+'</div>';
+    wrap.addEventListener('mousedown', function(ev){ if(ev.target===wrap) closeModal(); });
+    document.body.appendChild(wrap);
+    return wrap;
+  }
+  function closeModal(){ var m=document.getElementById('modal-backdrop'); if(m) m.remove(); }
+
+  function openContactModal(){
+    var me = state.me;
+    var m = openModal(
+      '<h3>Editar contacto</h3><p class="modal-sub">'+esc(me.name)+'</p>'+
+      '<div class="field"><label>Email ou telefone</label><input id="f-contact" value="'+esc(me.contact||'')+'"></div>'+
+      '<div class="modal-actions"><button class="btn btn-ghost" id="c-cancel">Cancelar</button><button class="btn btn-primary" id="c-save">Guardar</button></div>'
+    );
+    m.querySelector('#c-cancel').addEventListener('click', closeModal);
+    m.querySelector('#c-save').addEventListener('click', async function(){
+      try{
+        await api('me/contact', {method:'PUT', body: JSON.stringify({contact: document.getElementById('f-contact').value.trim()})});
+        closeModal(); await loadState();
+      }catch(e){ showToast(e.message); }
+    });
+  }
+
+  function openEmployeeModal(emp){
+    var isNew = !emp;
+    var e = emp || { id:null, name:'', startDate: todayIso(), contact:'', username:'', role:'colaborador', vacationDaysTotal:22, sickDaysTotal:3 };
+    var m = openModal(
+      '<h3>'+(isNew?'Novo colaborador':'Editar colaborador')+'</h3><p class="modal-sub">Preenche os dados e o acesso de login.</p>'+
+      '<div class="form-error" id="emp-err"></div>'+
+      '<div class="field"><label>Nome</label><input id="f-name" value="'+esc(e.name)+'"></div>'+
+      '<div class="field-row">'+
+        '<div class="field"><label>Data de início</label><input id="f-start" type="date" value="'+e.startDate+'"></div>'+
+        '<div class="field"><label>Função</label><select id="f-role"><option value="colaborador"'+(e.role==='colaborador'?' selected':'')+'>Colaborador</option><option value="gestor"'+(e.role==='gestor'?' selected':'')+'>Gestor</option></select></div>'+
+      '</div>'+
+      '<div class="field"><label>Contacto (email ou telefone)</label><input id="f-contact" value="'+esc(e.contact)+'"></div>'+
+      '<div class="field-row">'+
+        '<div class="field"><label>Dias de férias / ano</label><input id="f-vac" type="number" min="0" value="'+e.vacationDaysTotal+'"></div>'+
+        '<div class="field"><label>Dias de baixa / ano</label><input id="f-sick" type="number" min="0" value="'+e.sickDaysTotal+'"></div>'+
+      '</div>'+
+      '<div class="field-row">'+
+        '<div class="field"><label>Utilizador</label><input id="f-user" value="'+esc(e.username)+'"></div>'+
+        '<div class="field"><label>'+(isNew?'Palavra-passe':'Nova palavra-passe (opcional)')+'</label><input id="f-pass" value=""></div>'+
+      '</div>'+
+      '<div class="form-note">As passwords ficam encriptadas no servidor — nunca são devolvidas ao browser.</div>'+
+      '<div class="modal-actions"><button class="btn btn-ghost" id="e-cancel">Cancelar</button><button class="btn btn-primary" id="e-save">Guardar</button></div>'
+    );
+    m.querySelector('#e-cancel').addEventListener('click', closeModal);
+    m.querySelector('#e-save').addEventListener('click', async function(){
+      var name = document.getElementById('f-name').value.trim();
+      var username = document.getElementById('f-user').value.trim();
+      var password = document.getElementById('f-pass').value;
+      var errEl = document.getElementById('emp-err');
+      if(!name || !username || (isNew && !password)){
+        errEl.textContent = 'Preenche nome, utilizador e palavra-passe.'; errEl.style.display='block'; return;
+      }
+      var payload = {
+        name: name, username: username,
+        startDate: document.getElementById('f-start').value || todayIso(),
+        role: document.getElementById('f-role').value,
+        contact: document.getElementById('f-contact').value.trim(),
+        vacationDaysTotal: parseInt(document.getElementById('f-vac').value,10) || 0,
+        sickDaysTotal: parseInt(document.getElementById('f-sick').value,10) || 0,
+      };
+      if(password) payload.password = password;
+      try{
+        if(isNew) await api('employees', {method:'POST', body: JSON.stringify(payload)});
+        else await api('employees/'+e.id, {method:'PUT', body: JSON.stringify(payload)});
+        closeModal(); await loadState();
+      }catch(err){ errEl.textContent = err.message; errEl.style.display='block'; }
+    });
+  }
+
+  function openLeaveModal(employeeId, employeeName){
+    var type = 'ferias';
+    var m = openModal(
+      '<h3>Marcar ausência</h3><p class="modal-sub">'+esc(employeeName)+'</p>'+
+      '<div class="form-error" id="lv-err"></div>'+
+      '<div class="segment"><button type="button" class="active" id="seg-ferias">Férias</button><button type="button" id="seg-baixa">Baixa</button></div>'+
+      '<div class="field-row">'+
+        '<div class="field"><label>Início</label><input id="f-lstart" type="date" value="'+todayIso()+'"></div>'+
+        '<div class="field"><label>Fim</label><input id="f-lend" type="date" value="'+todayIso()+'"></div>'+
+      '</div>'+
+      '<div class="form-note" id="lv-preview"></div>'+
+      '<div class="modal-actions"><button class="btn btn-ghost" id="l-cancel">Cancelar</button><button class="btn btn-primary" id="l-save">Marcar</button></div>'
+    );
+    var isAuto = state.me.role==='gestor';
+    function updatePreview(){
+      var s=document.getElementById('f-lstart').value, en=document.getElementById('f-lend').value;
+      var el=document.getElementById('lv-preview');
+      if(!s || !en || parseIso(en)<parseIso(s)){ el.textContent='Escolhe um intervalo de datas válido.'; return; }
+      var days = type==='ferias' ? businessDaysCount(s,en) : calendarDaysCount(s,en);
+      el.textContent = days+' dia'+(days!==1?'s':'')+(type==='ferias'?' úteis':'')+(isAuto?'':' · fica pendente de aprovação');
+    }
+    m.querySelector('#seg-ferias').addEventListener('click', function(){ type='ferias'; this.classList.add('active'); m.querySelector('#seg-baixa').classList.remove('active'); updatePreview(); });
+    m.querySelector('#seg-baixa').addEventListener('click', function(){ type='baixa'; this.classList.add('active','baixa'); m.querySelector('#seg-ferias').classList.remove('active'); updatePreview(); });
+    m.querySelector('#f-lstart').addEventListener('input', updatePreview);
+    m.querySelector('#f-lend').addEventListener('input', updatePreview);
+    updatePreview();
+    m.querySelector('#l-cancel').addEventListener('click', closeModal);
+    m.querySelector('#l-save').addEventListener('click', async function(){
+      var s=document.getElementById('f-lstart').value, en=document.getElementById('f-lend').value;
+      var errEl=document.getElementById('lv-err');
+      try{
+        var res = await api('leaves', {method:'POST', body: JSON.stringify({employeeId:employeeId, type:type, start:s, end:en})});
+        closeModal(); await loadState();
+        showToast(res.status==='aprovado' ? (type==='ferias'?'Férias marcadas.':'Baixa registada.') : 'Pedido enviado — fica pendente até o administrador aprovar.');
+      }catch(err){ errEl.textContent = err.message; errEl.style.display='block'; }
+    });
+  }
+
+  // ---------------- Auth ----------------
+  document.getElementById('login-form').addEventListener('submit', async function(ev){
+    ev.preventDefault();
+    var u = document.getElementById('login-user').value.trim();
+    var p = document.getElementById('login-pass').value;
+    var errEl = document.getElementById('login-error');
+    errEl.style.display='none';
+    try{
+      await api('login', {method:'POST', body: JSON.stringify({username:u, password:p})});
+      document.getElementById('login-pass').value='';
+      currentView='home';
+      await enterApp();
+    }catch(e){ errEl.textContent = e.message; errEl.style.display='block'; }
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', async function(){
+    try{ await api('logout', {method:'POST'}); }catch(e){}
+    state = null;
+    document.getElementById('app-view').classList.add('hidden');
+    document.getElementById('login-view').classList.remove('hidden');
+  });
+
+  document.querySelectorAll('.nav-btn[data-view]').forEach(function(btn){
+    btn.addEventListener('click', function(){ currentView = btn.getAttribute('data-view'); renderNav(); renderMain(); });
+  });
+
+  async function enterApp(){
+    await loadState();
+    document.getElementById('login-view').classList.add('hidden');
+    document.getElementById('app-view').classList.remove('hidden');
+  }
+
+  (async function boot(){
+    try{
+      state = await api('state');
+      document.getElementById('login-view').classList.add('hidden');
+      document.getElementById('app-view').classList.remove('hidden');
+      render();
+    }catch(e){
+      // not logged in, show login screen (default state)
+    }
+  })();
+})();
+</script>
+</body>
+</html>
