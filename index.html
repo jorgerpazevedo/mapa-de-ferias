@@ -1,0 +1,890 @@
+<title>Mapa de Férias</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#F3F5EF; --surface:#FFFFFF; --surface-2:#EAEDE3;
+    --ink:#16211D; --ink-soft:#57635B; --ink-faint:#8A9089;
+    --accent:#B97423; --accent-ink:#3A2408; --accent-bg:#F3E4CC;
+    --moss:#3F6B52; --moss-bg:#E1EBE4;
+    --rose:#AE4B3F; --rose-bg:#F5E3E0;
+    --pending:#8A6D1D; --pending-bg:#F1E7C9;
+    --sand:#DCD7C8;
+    --shadow:0 1px 2px rgba(22,33,29,.06), 0 10px 28px -14px rgba(22,33,29,.22);
+    --radius:14px;
+    --font-display:'Fraunces', ui-serif, Georgia, serif;
+    --font-body:'Work Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#12160F; --surface:#191F17; --surface-2:#20261D;
+      --ink:#ECE9DF; --ink-soft:#AEB3A6; --ink-faint:#767C71;
+      --accent:#E3A855; --accent-ink:#291805; --accent-bg:#33270F;
+      --moss:#7FAE8F; --moss-bg:#1D2A21;
+      --rose:#E08D7E; --rose-bg:#331E1A;
+      --pending:#E3C568; --pending-bg:#332C14;
+      --sand:#2A3126;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#12160F; --surface:#191F17; --surface-2:#20261D;
+    --ink:#ECE9DF; --ink-soft:#AEB3A6; --ink-faint:#767C71;
+    --accent:#E3A855; --accent-ink:#291805; --accent-bg:#33270F;
+    --moss:#7FAE8F; --moss-bg:#1D2A21;
+    --rose:#E08D7E; --rose-bg:#331E1A;
+    --pending:#E3C568; --pending-bg:#332C14;
+    --sand:#2A3126;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.5);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:var(--font-body); font-size:15px; line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:var(--font-display); font-weight:600; text-wrap:balance; margin:0;}
+  .mono{font-family:var(--font-mono); font-variant-numeric:tabular-nums;}
+  button{font-family:inherit; font-size:inherit; cursor:pointer;}
+  input,select{font-family:inherit; font-size:inherit;}
+  a{color:inherit;}
+  ::selection{background:var(--accent-bg);}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:4px;}
+
+  .hidden{display:none !important;}
+
+  /* ---------- Login ---------- */
+  #login-view{
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    padding:24px; position:relative; overflow:hidden;
+    background-image:
+      radial-gradient(var(--sand) 1px, transparent 1px);
+    background-size:26px 26px;
+    background-position:-4px -4px;
+  }
+  #login-view::before{
+    content:""; position:absolute; inset:0;
+    background:
+      radial-gradient(600px 400px at 20% 15%, var(--paper) 10%, transparent 60%),
+      radial-gradient(700px 500px at 85% 90%, var(--paper) 5%, transparent 55%);
+    pointer-events:none;
+  }
+  .login-card{
+    position:relative; z-index:1;
+    width:100%; max-width:380px;
+    background:var(--surface); border:1px solid var(--sand);
+    border-radius:20px; padding:36px 32px 30px;
+    box-shadow:var(--shadow);
+  }
+  .login-mark{
+    width:42px;height:42px;border-radius:11px;background:var(--accent-bg);
+    display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:18px;
+  }
+  .login-card h1{font-size:26px; margin-bottom:4px;}
+  .login-sub{color:var(--ink-soft); font-size:13.5px; margin-bottom:26px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12.5px; font-weight:600; letter-spacing:.02em; color:var(--ink-soft); margin-bottom:6px; text-transform:uppercase;}
+  .field input, .field select{
+    width:100%; padding:11px 13px; border-radius:10px; border:1px solid var(--sand);
+    background:var(--paper); color:var(--ink);
+  }
+  .field input:focus, .field select:focus{border-color:var(--accent);}
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:11px 18px; border-radius:10px; border:1px solid transparent;
+    font-weight:600; font-size:14.5px; transition:transform .08s ease, opacity .15s ease;
+  }
+  .btn:active{transform:scale(.98);}
+  .btn-primary{background:var(--accent); color:var(--accent-ink);}
+  .btn-primary:hover{opacity:.92;}
+  .btn-primary:disabled{opacity:.5; cursor:not-allowed;}
+  .btn-ghost{background:transparent; border-color:var(--sand); color:var(--ink);}
+  .btn-ghost:hover{background:var(--surface-2);}
+  .btn-danger{background:var(--rose-bg); color:var(--rose);}
+  .btn-block{width:100%;}
+  .btn-sm{padding:7px 12px; font-size:13px; border-radius:8px;}
+  .login-error{
+    background:var(--rose-bg); color:var(--rose); font-size:13px; padding:10px 12px;
+    border-radius:10px; margin-bottom:14px; display:none;
+  }
+  .login-hint{margin-top:20px; font-size:12px; color:var(--ink-faint); line-height:1.6;}
+
+  /* ---------- App shell ---------- */
+  #app-view{min-height:100vh; display:flex;}
+  .sidebar{
+    width:230px; flex-shrink:0; background:var(--surface); border-right:1px solid var(--sand);
+    display:flex; flex-direction:column; padding:22px 16px;
+  }
+  .brand{display:flex; align-items:center; gap:10px; padding:0 6px 22px; border-bottom:1px solid var(--sand); margin-bottom:16px;}
+  .brand-mark{width:30px;height:30px;border-radius:9px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:15px;}
+  .brand-name{font-family:var(--font-display); font-weight:600; font-size:16.5px;}
+  .nav-btn{
+    display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+    padding:10px 12px; border-radius:10px; background:transparent; border:none; color:var(--ink-soft);
+    font-weight:500; font-size:14px; margin-bottom:2px;
+  }
+  .nav-btn:hover{background:var(--surface-2); color:var(--ink);}
+  .nav-btn.active{background:var(--accent-bg); color:var(--accent-ink);}
+  .sidebar-foot{margin-top:auto; padding-top:16px; border-top:1px solid var(--sand);}
+  .who{padding:0 6px 10px;}
+  .who-name{font-weight:600; font-size:13.5px;}
+  .who-role{font-size:12px; color:var(--ink-faint);}
+
+  .main{flex:1; min-width:0; padding:32px 40px 60px; max-width:1080px;}
+  .page-head{display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:26px; flex-wrap:wrap;}
+  .page-head h2{font-size:24px;}
+  .page-head p{color:var(--ink-soft); font-size:13.5px; margin-top:4px;}
+
+  .stat-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:28px;}
+  .stat-card{background:var(--surface); border:1px solid var(--sand); border-radius:var(--radius); padding:18px 20px; box-shadow:var(--shadow);}
+  .stat-num{font-family:var(--font-display); font-size:30px; font-weight:600; line-height:1;}
+  .stat-label{font-size:12.5px; color:var(--ink-soft); margin-top:6px;}
+
+  .panel{background:var(--surface); border:1px solid var(--sand); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:24px;}
+  .panel-head{display:flex; align-items:center; justify-content:space-between; padding:18px 20px; border-bottom:1px solid var(--sand); gap:12px; flex-wrap:wrap;}
+  .panel-head h3{font-size:16px;}
+  .panel-body{padding:6px 20px 18px;}
+  .panel-body.pad{padding:20px;}
+
+  table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  thead th{
+    text-align:left; font-size:11px; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--ink-faint); font-weight:600; padding:10px 10px; border-bottom:1px solid var(--sand);
+  }
+  tbody td{padding:12px 10px; border-bottom:1px solid var(--sand); vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  .emp-name{font-weight:600;}
+  .emp-sub{font-size:12px; color:var(--ink-faint); margin-top:2px;}
+  .bal{font-family:var(--font-mono); font-size:13px;}
+  .bal .low{color:var(--rose); font-weight:600;}
+  .row-actions{display:flex; gap:6px; flex-wrap:wrap;}
+  .table-wrap{overflow-x:auto;}
+
+  .chip{display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px; font-size:11.5px; font-weight:600;}
+  .chip-ferias{background:var(--accent-bg); color:var(--accent-ink);}
+  .chip-baixa{background:var(--moss-bg); color:var(--moss);}
+  .chip-over{background:var(--rose-bg); color:var(--rose);}
+  .chip-pendente{background:var(--pending-bg); color:var(--pending);}
+  .chip-aprovado{background:var(--moss-bg); color:var(--moss);}
+  .chip-rejeitado{background:var(--rose-bg); color:var(--rose);}
+  .chip-row{display:flex; gap:6px; flex-wrap:wrap;}
+
+  .nav-badge{
+    margin-left:auto; background:var(--rose); color:#fff; font-size:11px; font-weight:700;
+    padding:1px 7px; border-radius:999px; line-height:1.5; font-family:var(--font-mono);
+  }
+  .panel-attention{border-color:var(--pending);}
+  .panel-attention .panel-head{border-bottom-color:var(--pending-bg);}
+  .req-row{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:13px 10px; border-bottom:1px solid var(--sand); flex-wrap:wrap;}
+  .req-row:last-child{border-bottom:none;}
+  .req-actions{display:flex; gap:8px; flex-shrink:0;}
+  .btn-approve{background:var(--moss-bg); color:var(--moss);}
+  .btn-reject{background:var(--rose-bg); color:var(--rose);}
+  .pending-note{font-size:11.5px; color:var(--pending); font-weight:600; margin-top:2px;}
+
+  .empty{padding:28px 10px; text-align:center; color:var(--ink-faint); font-size:13.5px;}
+
+  .list-item{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 10px; border-bottom:1px solid var(--sand);}
+  .list-item:last-child{border-bottom:none;}
+  .list-item-main{display:flex; align-items:center; gap:12px; min-width:0;}
+  .avatar{
+    width:34px;height:34px;border-radius:50%; background:var(--surface-2); color:var(--ink-soft);
+    display:flex; align-items:center; justify-content:center; font-weight:600; font-size:13px; flex-shrink:0;
+  }
+  .li-name{font-weight:600; font-size:13.5px;}
+  .li-sub{font-size:12px; color:var(--ink-faint);}
+
+  .profile-grid{display:grid; grid-template-columns:1.1fr 1fr; gap:20px;}
+  @media (max-width:820px){ .profile-grid{grid-template-columns:1fr;} .sidebar{width:76px;} .brand-name,.nav-btn span.lbl{display:none;} .who{display:none;} .main{padding:24px 18px 50px;} }
+
+  .balance-card{padding:20px;}
+  .balance-row{display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid var(--sand);}
+  .balance-row:last-child{border-bottom:none;}
+  .balance-title{font-weight:600; font-size:14px;}
+  .balance-sub{font-size:12px; color:var(--ink-faint); margin-top:2px;}
+  .balance-figure{font-family:var(--font-mono); font-size:20px; font-weight:600; text-align:right;}
+  .balance-figure small{display:block; font-size:11px; font-weight:500; color:var(--ink-faint); font-family:var(--font-body);}
+  .meter{height:6px; border-radius:99px; background:var(--surface-2); overflow:hidden; margin-top:8px;}
+  .meter-fill{height:100%; border-radius:99px; background:var(--accent);}
+  .meter-fill.moss{background:var(--moss);}
+  .meter-fill.over{background:var(--rose);}
+
+  .field-row{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(15,20,14,.45); display:flex; align-items:center; justify-content:center;
+    padding:20px; z-index:50;
+  }
+  .modal{
+    width:100%; max-width:440px; background:var(--surface); border-radius:18px; border:1px solid var(--sand);
+    box-shadow:var(--shadow); padding:26px 26px 22px; max-height:88vh; overflow-y:auto;
+  }
+  .modal h3{font-size:18px; margin-bottom:4px;}
+  .modal-sub{font-size:13px; color:var(--ink-soft); margin-bottom:18px;}
+  .modal-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:20px;}
+  .form-error{background:var(--rose-bg); color:var(--rose); font-size:13px; padding:9px 11px; border-radius:9px; margin-bottom:12px; display:none;}
+  .form-note{font-size:12px; color:var(--ink-faint); margin-top:4px;}
+  .segment{display:flex; gap:8px; margin-bottom:14px;}
+  .segment button{flex:1; padding:9px; border-radius:9px; border:1px solid var(--sand); background:var(--paper); color:var(--ink-soft); font-weight:600; font-size:13.5px;}
+  .segment button.active{background:var(--accent-bg); color:var(--accent-ink); border-color:var(--accent-bg);}
+  .segment button.active.baixa{background:var(--moss-bg); color:var(--moss); border-color:var(--moss-bg);}
+
+  .toast{
+    position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
+    background:var(--ink); color:var(--paper); padding:11px 18px; border-radius:10px; font-size:13.5px;
+    box-shadow:var(--shadow); z-index:80; opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(-4px);}
+
+  .icon-btn{
+    width:30px;height:30px;border-radius:8px; border:1px solid var(--sand); background:var(--paper);
+    display:flex; align-items:center; justify-content:center; color:var(--ink-soft); font-size:14px;
+  }
+  .icon-btn:hover{background:var(--surface-2);}
+</style>
+
+<div id="root">
+
+  <div id="login-view">
+    <div class="login-card">
+      <div class="login-mark">🌴</div>
+      <h1>Mapa de Férias</h1>
+      <p class="login-sub">Inicia sessão para consultar o teu saldo ou marcar ausências.</p>
+      <div class="login-error" id="login-error"></div>
+      <form id="login-form">
+        <div class="field">
+          <label for="login-user">Utilizador</label>
+          <input id="login-user" type="text" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="login-pass">Palavra-passe</label>
+          <input id="login-pass" type="password" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+      </form>
+      <div class="login-hint">Administrador: <strong class="mono">admin</strong> / <strong class="mono">admin</strong> · Funcionário (exemplo): <strong class="mono">user</strong> / <strong class="mono">user</strong></div>
+    </div>
+  </div>
+
+  <div id="app-view" class="hidden">
+    <div class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">🌴</div>
+        <div class="brand-name">Mapa de Férias</div>
+      </div>
+      <button class="nav-btn active" data-view="home"><span>🏠</span><span class="lbl">Início</span></button>
+      <button class="nav-btn" data-view="team" id="nav-team"><span>👥</span><span class="lbl">Colaboradores</span></button>
+      <button class="nav-btn" data-view="mine"><span>🗓️</span><span class="lbl">As minhas férias</span></button>
+      <div class="sidebar-foot">
+        <div class="who">
+          <div class="who-name" id="who-name">—</div>
+          <div class="who-role" id="who-role">—</div>
+        </div>
+        <button class="btn btn-ghost btn-block btn-sm" id="logout-btn">Sair</button>
+      </div>
+    </div>
+    <div class="main" id="main"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script id="state-data" type="application/json">
+{"version":1,"employees":[{"id":"e1","name":"Administrador","startDate":"2024-01-08","contact":"geral@empresa.pt","username":"admin","password":"admin","role":"gestor","vacationDaysTotal":22,"sickDaysTotal":3},{"id":"e2","name":"Colaborador Exemplo","startDate":"2025-03-03","contact":"colaborador@empresa.pt","username":"user","password":"user","role":"colaborador","vacationDaysTotal":22,"sickDaysTotal":3}],"leaves":[]}
+</script>
+
+<script>
+(function(){
+  'use strict';
+
+  var PRISTINE_HTML = document.documentElement.outerHTML;
+
+  var state = JSON.parse(document.getElementById('state-data').textContent);
+  var session = null;
+  try { session = JSON.parse(localStorage.getItem('mapaFeriasSession') || 'null'); } catch(e){ session = null; }
+  var currentView = 'home';
+  var artifactApi = null;
+  var canWrite = true;
+
+  function uid(prefix){ return prefix + Math.random().toString(36).slice(2,9); }
+  function todayIso(){ return new Date().toISOString().slice(0,10); }
+  function thisYear(){ return new Date().getFullYear(); }
+  function fmt(iso){
+    if(!iso) return '—';
+    var p = iso.split('-');
+    return p[2] + '/' + p[1] + '/' + p[0];
+  }
+  function esc(s){
+    return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function parseIso(iso){ var p = iso.split('-').map(Number); return new Date(p[0], p[1]-1, p[2]); }
+  function calendarDays(startIso,endIso){
+    var s = parseIso(startIso), e = parseIso(endIso);
+    return Math.round((e-s)/86400000)+1;
+  }
+  function businessDays(startIso,endIso){
+    var s = parseIso(startIso), e = parseIso(endIso);
+    if(e<s) return 0;
+    var count=0, d=new Date(s);
+    while(d<=e){
+      var dow = d.getDay();
+      if(dow!==0 && dow!==6) count++;
+      d.setDate(d.getDate()+1);
+    }
+    return count;
+  }
+  function rangesOverlap(aStart,aEnd,bStart,bEnd){
+    return parseIso(aStart) <= parseIso(bEnd) && parseIso(bStart) <= parseIso(aEnd);
+  }
+
+  function findEmployee(id){
+    for(var i=0;i<state.employees.length;i++) if(state.employees[i].id===id) return state.employees[i];
+    return null;
+  }
+  function employeeLeaves(empId, year){
+    return state.leaves.filter(function(l){
+      return l.employeeId===empId && parseIso(l.start).getFullYear()===year;
+    });
+  }
+  function leaveStatus(l){ return l.status || 'aprovado'; }
+  function approvedDays(empId, type, year){
+    return employeeLeaves(empId, year||thisYear()).filter(function(l){return l.type===type && leaveStatus(l)==='aprovado';})
+      .reduce(function(sum,l){return sum+l.days;},0);
+  }
+  function pendingDays(empId, type, year){
+    return employeeLeaves(empId, year||thisYear()).filter(function(l){return l.type===type && leaveStatus(l)==='pendente';})
+      .reduce(function(sum,l){return sum+l.days;},0);
+  }
+  function pendingRequests(){
+    return state.leaves.filter(function(l){ return leaveStatus(l)==='pendente'; })
+      .sort(function(a,b){ return a.createdAt<b.createdAt?-1:1; });
+  }
+  function yearsOfService(startIso){
+    var s = parseIso(startIso), n = new Date();
+    var y = n.getFullYear()-s.getFullYear();
+    if (n.getMonth()<s.getMonth() || (n.getMonth()===s.getMonth() && n.getDate()<s.getDate())) y--;
+    return Math.max(0,y);
+  }
+  function initials(name){
+    var parts = name.trim().split(/\s+/);
+    return ((parts[0]||'')[0]||'') + ((parts[parts.length-1]||'')[0]||'');
+  }
+
+  function saveSession(){
+    if(session) localStorage.setItem('mapaFeriasSession', JSON.stringify(session));
+    else localStorage.removeItem('mapaFeriasSession');
+  }
+
+  function showToast(msg){
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(showToast._h);
+    showToast._h = setTimeout(function(){ t.classList.remove('show'); }, 2600);
+  }
+
+  async function getArtifactApi(){
+    if(artifactApi) return artifactApi;
+    if(window.claude && typeof window.claude.use === 'function'){
+      try { artifactApi = await window.claude.use('artifact'); } catch(e){ artifactApi = null; }
+    }
+    return artifactApi;
+  }
+
+  async function persist(){
+    render();
+    var api = await getArtifactApi();
+    if(!api){ showToast('Alterado localmente (sem sincronização).'); return; }
+    var json = JSON.stringify(state).replace(/</g, '\\u003c');
+    var html = PRISTINE_HTML.replace(
+      /(<script id="state-data"[^>]*>)([\s\S]*?)(<\/script>)/,
+      function(_,a,b,c){ return a + json + c; }
+    );
+    html = '<!doctype html>\n' + html;
+    try{
+      var res = await api.publish(html);
+      if(res && res.conflict){
+        showToast('Outra pessoa gravou entretanto — a página vai atualizar.');
+      }
+      canWrite = true;
+    }catch(e){
+      canWrite = false;
+      showToast('Sem permissão para gravar. Pede acesso de edição a quem partilhou esta página.');
+    }
+  }
+
+  function respondToLeave(leaveId, newStatus, me){
+    var lv = state.leaves.find(function(l){ return l.id===leaveId; });
+    if(!lv) return;
+    lv.status = newStatus;
+    lv.respondedBy = me.id;
+    lv.respondedAt = new Date().toISOString();
+    persist();
+    showToast(newStatus==='aprovado' ? 'Pedido aprovado.' : 'Pedido rejeitado.');
+  }
+
+  function managerEmails(){
+    return state.employees.filter(function(e){ return e.role==='gestor' && e.contact && e.contact.indexOf('@')>-1; })
+      .map(function(e){ return e.contact; });
+  }
+  function notifyMailto(emp, lv){
+    var to = managerEmails().join(',');
+    var subject = 'Pedido de ' + (lv.type==='ferias'?'férias':'baixa') + ' — ' + emp.name;
+    var body = emp.name + ' pediu ' + (lv.type==='ferias'?'férias':'baixa') + ' de ' + fmt(lv.start) + ' a ' + fmt(lv.end) + ' (' + lv.days + ' dias). Aprova em Mapa de Férias.';
+    return 'mailto:' + encodeURIComponent(to) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+  }
+
+  // ---------------- Auth ----------------
+  document.getElementById('login-form').addEventListener('submit', function(ev){
+    ev.preventDefault();
+    var u = document.getElementById('login-user').value.trim();
+    var p = document.getElementById('login-pass').value;
+    var emp = state.employees.find(function(e){ return e.username===u; });
+    var errEl = document.getElementById('login-error');
+    if(!emp || emp.password!==p){
+      errEl.textContent = 'Utilizador ou palavra-passe incorretos.';
+      errEl.style.display='block';
+      return;
+    }
+    errEl.style.display='none';
+    session = { employeeId: emp.id };
+    saveSession();
+    document.getElementById('login-pass').value='';
+    currentView = 'home';
+    enterApp();
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', function(){
+    session = null;
+    saveSession();
+    document.getElementById('app-view').classList.add('hidden');
+    document.getElementById('login-view').classList.remove('hidden');
+  });
+
+  document.querySelectorAll('.nav-btn[data-view]').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      currentView = btn.getAttribute('data-view');
+      renderNav();
+      renderMain();
+    });
+  });
+
+  function enterApp(){
+    document.getElementById('login-view').classList.add('hidden');
+    document.getElementById('app-view').classList.remove('hidden');
+    render();
+  }
+
+  function currentUser(){
+    if(!session) return null;
+    return findEmployee(session.employeeId);
+  }
+
+  function render(){
+    var me = currentUser();
+    if(!me){
+      session = null; saveSession();
+      document.getElementById('app-view').classList.add('hidden');
+      document.getElementById('login-view').classList.remove('hidden');
+      return;
+    }
+    document.getElementById('who-name').textContent = me.name;
+    document.getElementById('who-role').textContent = me.role==='gestor' ? 'Gestor' : 'Colaborador';
+    document.getElementById('nav-team').style.display = me.role==='gestor' ? '' : 'none';
+    if(me.role!=='gestor' && currentView==='team') currentView='home';
+    renderNav();
+    renderMain();
+  }
+
+  function renderNav(){
+    document.querySelectorAll('.nav-btn[data-view]').forEach(function(btn){
+      btn.classList.toggle('active', btn.getAttribute('data-view')===currentView);
+    });
+    var me = currentUser();
+    var homeBtn = document.querySelector('.nav-btn[data-view="home"]');
+    var oldBadge = homeBtn.querySelector('.nav-badge');
+    if(oldBadge) oldBadge.remove();
+    if(me && me.role==='gestor'){
+      var n = pendingRequests().length;
+      if(n>0){
+        var badge = document.createElement('span');
+        badge.className = 'nav-badge';
+        badge.textContent = n;
+        homeBtn.appendChild(badge);
+      }
+    }
+  }
+
+  function renderMain(){
+    var me = currentUser();
+    var main = document.getElementById('main');
+    if(currentView==='team' && me.role==='gestor'){ main.innerHTML = viewTeam(me); wireTeam(me); return; }
+    if(currentView==='mine'){ main.innerHTML = viewMine(me, me); wirePersonal(me, me); return; }
+    main.innerHTML = viewHome(me);
+    wireHome(me);
+  }
+
+  // ---------------- Home ----------------
+  function viewHome(me){
+    var year = thisYear();
+    var today = todayIso();
+    var onLeaveToday = state.leaves.filter(function(l){ return leaveStatus(l)==='aprovado' && l.start<=today && today<=l.end; });
+    var upcoming = state.leaves.filter(function(l){ return leaveStatus(l)!=='rejeitado' && l.start>=today; })
+      .sort(function(a,b){ return a.start<b.start?-1:1; }).slice(0,8);
+    var pending = pendingRequests();
+
+    var statCards = '';
+    if(me.role==='gestor'){
+      statCards =
+        '<div class="stat-card"><div class="stat-num">'+state.employees.length+'</div><div class="stat-label">Colaboradores</div></div>'+
+        '<div class="stat-card"><div class="stat-num" style="'+(pending.length>0?'color:var(--pending)':'')+'">'+pending.length+'</div><div class="stat-label">Pedidos pendentes</div></div>'+
+        '<div class="stat-card"><div class="stat-num">'+onLeaveToday.length+'</div><div class="stat-label">Ausentes hoje</div></div>'+
+        '<div class="stat-card"><div class="stat-num">'+upcoming.length+'</div><div class="stat-label">Ausências agendadas</div></div>';
+    }
+
+    var vUsed = approvedDays(me.id,'ferias',year), vTotal = me.vacationDaysTotal, vPending = pendingDays(me.id,'ferias',year);
+    var sUsed = approvedDays(me.id,'baixa',year), sTotal = me.sickDaysTotal, sPending = pendingDays(me.id,'baixa',year);
+
+    var html = '<div class="page-head"><div><h2>Olá, '+esc(me.name.split(' ')[0])+'</h2><p>'+ (me.role==='gestor'?'Resumo da equipa e do teu saldo pessoal.':'O teu saldo de férias e baixas para '+year+'.') +'</p></div>'+
+      '<button class="btn btn-primary" id="quick-mark">+ Marcar ausência</button></div>';
+
+    if(statCards) html += '<div class="stat-row">'+statCards+'</div>';
+
+    if(me.role==='gestor' && pending.length>0){
+      html += '<div class="panel panel-attention"><div class="panel-head"><h3>Pedidos pendentes</h3></div><div class="panel-body pad" style="padding-top:2px;">';
+      pending.forEach(function(l){
+        var emp = findEmployee(l.employeeId);
+        html += '<div class="req-row"><div class="list-item-main"><div class="avatar">'+esc(initials(emp?emp.name:'?'))+'</div><div><div class="li-name">'+esc(emp?emp.name:'—')+'</div><div class="li-sub">'+chipLabel(l.type)+' · '+fmt(l.start)+' – '+fmt(l.end)+' · '+l.days+' dia'+(l.days!==1?'s':'')+'</div></div></div>'+
+          '<div class="req-actions"><button class="btn btn-sm btn-reject" data-reject="'+l.id+'">Rejeitar</button><button class="btn btn-sm btn-approve" data-approve="'+l.id+'">Aprovar</button></div></div>';
+      });
+      html += '</div></div>';
+    }
+
+    html += '<div class="profile-grid">';
+    html += balanceCard(me, year, vUsed, vTotal, sUsed, sTotal, vPending, sPending);
+
+    html += '<div class="panel"><div class="panel-head"><h3>'+(me.role==='gestor'?'Próximas ausências (equipa)':'As tuas próximas ausências')+'</h3></div><div class="panel-body pad">';
+    var list = me.role==='gestor' ? upcoming : upcoming.filter(function(l){return l.employeeId===me.id;});
+    if(list.length===0){
+      html += '<div class="empty">Sem ausências agendadas.</div>';
+    } else {
+      list.forEach(function(l){
+        var emp = findEmployee(l.employeeId);
+        html += '<div class="list-item"><div class="list-item-main"><div class="avatar">'+esc(initials(emp?emp.name:'?'))+'</div><div><div class="li-name">'+esc(emp?emp.name:'—')+'</div><div class="li-sub">'+fmt(l.start)+' – '+fmt(l.end)+' · '+l.days+' dia'+(l.days!==1?'s':'')+'</div></div></div>'+
+          '<div class="chip-row">'+chip(l.type)+statusChip(leaveStatus(l))+'</div></div>';
+      });
+    }
+    html += '</div></div>';
+    html += '</div>';
+    return html;
+  }
+
+  function chipLabel(type){ return type==='ferias' ? 'Férias' : 'Baixa'; }
+  function chip(type){
+    return type==='ferias' ? '<span class="chip chip-ferias">Férias</span>' : '<span class="chip chip-baixa">Baixa</span>';
+  }
+  function statusChip(status){
+    if(status==='pendente') return '<span class="chip chip-pendente">Pendente</span>';
+    if(status==='rejeitado') return '<span class="chip chip-rejeitado">Rejeitado</span>';
+    return '<span class="chip chip-aprovado">Aprovado</span>';
+  }
+
+  function balanceCard(me, year, vUsed, vTotal, sUsed, sTotal, vPending, sPending){
+    vPending = vPending||0; sPending = sPending||0;
+    var vRemain = vTotal - vUsed;
+    var sRemain = sTotal - sUsed;
+    var vPct = vTotal>0 ? Math.min(100, vUsed/vTotal*100) : 0;
+    var sPct = sTotal>0 ? Math.min(100, sUsed/sTotal*100) : 0;
+    return '<div class="panel"><div class="panel-head"><h3>Saldo '+year+'</h3></div><div class="balance-card">'+
+      '<div class="balance-row"><div><div class="balance-title">Férias</div><div class="balance-sub">'+vUsed+' de '+vTotal+' dias úteis usados</div>'+(vPending>0?'<div class="pending-note">+'+vPending+' pendente'+(vPending!==1?'s':'')+' de aprovação</div>':'')+'<div class="meter"><div class="meter-fill" style="width:'+vPct+'%"></div></div></div>'+
+      '<div class="balance-figure '+(vRemain<0?'low':'')+'"'+(vRemain<0?' style="color:var(--rose)"':'')+'>'+vRemain+'<small>restam</small></div></div>'+
+      '<div class="balance-row"><div><div class="balance-title">Baixas</div><div class="balance-sub">'+sUsed+' de '+sTotal+' dias usados</div>'+(sPending>0?'<div class="pending-note">+'+sPending+' pendente'+(sPending!==1?'s':'')+' de aprovação</div>':'')+'<div class="meter"><div class="meter-fill moss" style="width:'+sPct+'%"></div></div></div>'+
+      '<div class="balance-figure"'+(sRemain<0?' style="color:var(--rose)"':'')+'>'+sRemain+'<small>restam</small></div></div>'+
+      '<div class="balance-row"><div><div class="balance-title">Antiguidade</div><div class="balance-sub">desde '+fmt(me.startDate)+'</div></div><div class="balance-figure">'+yearsOfService(me.startDate)+'<small>anos</small></div></div>'+
+      '</div></div>';
+  }
+
+  function wireHome(me){
+    var btn = document.getElementById('quick-mark');
+    if(btn) btn.addEventListener('click', function(){ openLeaveModal(me.id, me); });
+    document.querySelectorAll('[data-approve]').forEach(function(b){
+      b.addEventListener('click', function(){ respondToLeave(b.getAttribute('data-approve'), 'aprovado', me); });
+    });
+    document.querySelectorAll('[data-reject]').forEach(function(b){
+      b.addEventListener('click', function(){ respondToLeave(b.getAttribute('data-reject'), 'rejeitado', me); });
+    });
+  }
+
+  // ---------------- Mine ----------------
+  function viewMine(me, target){
+    var year = thisYear();
+    var vUsed = approvedDays(target.id,'ferias',year), sUsed = approvedDays(target.id,'baixa',year);
+    var vPending = pendingDays(target.id,'ferias',year), sPending = pendingDays(target.id,'baixa',year);
+    var mine = state.leaves.filter(function(l){return l.employeeId===target.id;})
+      .sort(function(a,b){ return a.start<b.start?1:-1; });
+
+    var html = '<div class="page-head"><div><h2>As minhas férias</h2><p>Marca novas ausências e consulta o histórico.</p></div>'+
+      '<button class="btn btn-primary" id="mine-mark">+ Marcar ausência</button></div>';
+
+    html += '<div class="profile-grid">';
+    html += balanceCard(target, year, vUsed, target.vacationDaysTotal, sUsed, target.sickDaysTotal, vPending, sPending);
+
+    html += '<div class="panel"><div class="panel-head"><h3>Contacto</h3><button class="btn btn-ghost btn-sm" id="edit-contact">Editar</button></div><div class="panel-body pad">'+
+      '<div class="balance-row"><div class="balance-title">Contacto</div><div>'+esc(target.contact||'—')+'</div></div>'+
+      '<div class="balance-row"><div class="balance-title">Data de início</div><div>'+fmt(target.startDate)+'</div></div>'+
+      '</div></div>';
+    html += '</div>';
+
+    html += '<div class="panel"><div class="panel-head"><h3>Histórico</h3></div><div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Início</th><th>Fim</th><th>Dias</th><th>Estado</th><th></th></tr></thead><tbody>';
+    if(mine.length===0){
+      html += '<tr><td colspan="6"><div class="empty">Ainda não marcaste nenhuma ausência.</div></td></tr>';
+    } else {
+      mine.forEach(function(l){
+        var st = leaveStatus(l);
+        var canCancel = me.role==='gestor' || st==='pendente' || l.start>=todayIso();
+        html += '<tr><td>'+chip(l.type)+'</td><td class="mono">'+fmt(l.start)+'</td><td class="mono">'+fmt(l.end)+'</td><td class="mono">'+l.days+'</td><td>'+statusChip(st)+'</td>'+
+          '<td>'+(canCancel?'<button class="btn btn-ghost btn-sm" data-cancel="'+l.id+'">Cancelar</button>':'')+'</td></tr>';
+      });
+    }
+    html += '</tbody></table></div></div>';
+    return html;
+  }
+
+  function wirePersonal(me, target){
+    var b1 = document.getElementById('mine-mark');
+    if(b1) b1.addEventListener('click', function(){ openLeaveModal(target.id, me); });
+    var ec = document.getElementById('edit-contact');
+    if(ec) ec.addEventListener('click', function(){ openContactModal(target); });
+    document.querySelectorAll('[data-cancel]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-cancel');
+        if(!confirm('Cancelar esta ausência?')) return;
+        state.leaves = state.leaves.filter(function(l){ return l.id!==id; });
+        persist();
+      });
+    });
+  }
+
+  // ---------------- Team (gestor) ----------------
+  function viewTeam(me){
+    var year = thisYear();
+    var html = '<div class="page-head"><div><h2>Colaboradores</h2><p>Gere a equipa, saldos e acessos.</p></div>'+
+      '<button class="btn btn-primary" id="add-emp">+ Novo colaborador</button></div>';
+
+    html += '<div class="panel"><div class="table-wrap"><table><thead><tr><th>Nome</th><th>Início</th><th>Contacto</th><th>Férias</th><th>Baixas</th><th></th></tr></thead><tbody>';
+    state.employees.forEach(function(e){
+      var vUsed = approvedDays(e.id,'ferias',year), sUsed = approvedDays(e.id,'baixa',year);
+      var vPending = pendingDays(e.id,'ferias',year), sPending = pendingDays(e.id,'baixa',year);
+      var vRemain = e.vacationDaysTotal - vUsed, sRemain = e.sickDaysTotal - sUsed;
+      html += '<tr><td><div class="emp-name">'+esc(e.name)+'</div><div class="emp-sub">'+(e.role==='gestor'?'Gestor':'Colaborador')+' · @'+esc(e.username)+'</div></td>'+
+        '<td class="mono">'+fmt(e.startDate)+'</td>'+
+        '<td>'+esc(e.contact||'—')+'</td>'+
+        '<td class="bal">'+vUsed+'/'+e.vacationDaysTotal+' <span class="'+(vRemain<0?'low':'')+'">('+vRemain+' restam)</span>'+(vPending>0?'<div class="pending-note">+'+vPending+' pend.</div>':'')+'</td>'+
+        '<td class="bal">'+sUsed+'/'+e.sickDaysTotal+' <span class="'+(sRemain<0?'low':'')+'">('+sRemain+' restam)</span>'+(sPending>0?'<div class="pending-note">+'+sPending+' pend.</div>':'')+'</td>'+
+        '<td><div class="row-actions">'+
+          '<button class="icon-btn" title="Marcar ausência" data-mark="'+e.id+'">🗓️</button>'+
+          '<button class="icon-btn" title="Editar" data-edit="'+e.id+'">✎</button>'+
+          '<button class="icon-btn" title="Remover" data-remove="'+e.id+'">🗑</button>'+
+        '</div></td></tr>';
+    });
+    html += '</tbody></table></div></div>';
+    return html;
+  }
+
+  function wireTeam(me){
+    var add = document.getElementById('add-emp');
+    if(add) add.addEventListener('click', function(){ openEmployeeModal(null); });
+    document.querySelectorAll('[data-mark]').forEach(function(btn){
+      btn.addEventListener('click', function(){ openLeaveModal(btn.getAttribute('data-mark'), me); });
+    });
+    document.querySelectorAll('[data-edit]').forEach(function(btn){
+      btn.addEventListener('click', function(){ openEmployeeModal(findEmployee(btn.getAttribute('data-edit'))); });
+    });
+    document.querySelectorAll('[data-remove]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-remove');
+        var emp = findEmployee(id);
+        if(id===me.id){ showToast('Não podes remover a tua própria conta.'); return; }
+        if(!confirm('Remover '+emp.name+' e todo o seu histórico?')) return;
+        state.employees = state.employees.filter(function(e){ return e.id!==id; });
+        state.leaves = state.leaves.filter(function(l){ return l.employeeId!==id; });
+        persist();
+      });
+    });
+  }
+
+  // ---------------- Modals ----------------
+  function openModal(innerHtml){
+    var wrap = document.createElement('div');
+    wrap.className = 'modal-backdrop';
+    wrap.id = 'modal-backdrop';
+    wrap.innerHTML = '<div class="modal">'+innerHtml+'</div>';
+    wrap.addEventListener('mousedown', function(ev){ if(ev.target===wrap) closeModal(); });
+    document.body.appendChild(wrap);
+    return wrap;
+  }
+  function closeModal(){
+    var m = document.getElementById('modal-backdrop');
+    if(m) m.remove();
+  }
+
+  function openContactModal(target){
+    var m = openModal(
+      '<h3>Editar contacto</h3><p class="modal-sub">'+esc(target.name)+'</p>'+
+      '<div class="field"><label>Email ou telefone</label><input id="f-contact" value="'+esc(target.contact||'')+'"></div>'+
+      '<div class="modal-actions"><button class="btn btn-ghost" id="c-cancel">Cancelar</button><button class="btn btn-primary" id="c-save">Guardar</button></div>'
+    );
+    m.querySelector('#c-cancel').addEventListener('click', closeModal);
+    m.querySelector('#c-save').addEventListener('click', function(){
+      target.contact = document.getElementById('f-contact').value.trim();
+      closeModal(); persist();
+    });
+  }
+
+  function openEmployeeModal(emp){
+    var isNew = !emp;
+    var e = emp || { id:uid('e'), name:'', startDate: todayIso(), contact:'', username:'', password:'', role:'colaborador', vacationDaysTotal:22, sickDaysTotal:3 };
+    var m = openModal(
+      '<h3>'+(isNew?'Novo colaborador':'Editar colaborador')+'</h3><p class="modal-sub">Preenche os dados e o acesso de login.</p>'+
+      '<div class="form-error" id="emp-err"></div>'+
+      '<div class="field"><label>Nome</label><input id="f-name" value="'+esc(e.name)+'"></div>'+
+      '<div class="field-row">'+
+        '<div class="field"><label>Data de início</label><input id="f-start" type="date" value="'+e.startDate+'"></div>'+
+        '<div class="field"><label>Função</label><select id="f-role"><option value="colaborador"'+(e.role==='colaborador'?' selected':'')+'>Colaborador</option><option value="gestor"'+(e.role==='gestor'?' selected':'')+'>Gestor</option></select></div>'+
+      '</div>'+
+      '<div class="field"><label>Contacto (email ou telefone)</label><input id="f-contact" value="'+esc(e.contact)+'"></div>'+
+      '<div class="field-row">'+
+        '<div class="field"><label>Dias de férias / ano</label><input id="f-vac" type="number" min="0" value="'+e.vacationDaysTotal+'"></div>'+
+        '<div class="field"><label>Dias de baixa / ano</label><input id="f-sick" type="number" min="0" value="'+e.sickDaysTotal+'"></div>'+
+      '</div>'+
+      '<div class="field-row">'+
+        '<div class="field"><label>Utilizador</label><input id="f-user" value="'+esc(e.username)+'"></div>'+
+        '<div class="field"><label>Palavra-passe</label><input id="f-pass" value="'+esc(e.password)+'"></div>'+
+      '</div>'+
+      '<div class="form-note">O acesso não é encriptado — usa isto apenas para uma equipa de confiança, não para dados sensíveis.</div>'+
+      '<div class="modal-actions"><button class="btn btn-ghost" id="e-cancel">Cancelar</button><button class="btn btn-primary" id="e-save">Guardar</button></div>'
+    );
+    m.querySelector('#e-cancel').addEventListener('click', closeModal);
+    m.querySelector('#e-save').addEventListener('click', function(){
+      var name = document.getElementById('f-name').value.trim();
+      var username = document.getElementById('f-user').value.trim();
+      var password = document.getElementById('f-pass').value;
+      var errEl = document.getElementById('emp-err');
+      if(!name || !username || !password){
+        errEl.textContent = 'Preenche nome, utilizador e palavra-passe.'; errEl.style.display='block'; return;
+      }
+      var clash = state.employees.find(function(x){ return x.username===username && x.id!==e.id; });
+      if(clash){ errEl.textContent = 'Já existe um colaborador com esse utilizador.'; errEl.style.display='block'; return; }
+
+      e.name = name;
+      e.startDate = document.getElementById('f-start').value || todayIso();
+      e.role = document.getElementById('f-role').value;
+      e.contact = document.getElementById('f-contact').value.trim();
+      e.vacationDaysTotal = Math.max(0, parseInt(document.getElementById('f-vac').value,10) || 0);
+      e.sickDaysTotal = Math.max(0, parseInt(document.getElementById('f-sick').value,10) || 0);
+      e.username = username;
+      e.password = password;
+
+      if(isNew) state.employees.push(e);
+      closeModal(); persist();
+    });
+  }
+
+  function openLeaveModal(employeeId, actingUser){
+    var emp = findEmployee(employeeId);
+    var type = 'ferias';
+    var year = thisYear();
+    var m = openModal(
+      '<h3>Marcar ausência</h3><p class="modal-sub">'+esc(emp.name)+'</p>'+
+      '<div class="form-error" id="lv-err"></div>'+
+      '<div class="segment">'+
+        '<button type="button" class="active" id="seg-ferias">Férias</button>'+
+        '<button type="button" id="seg-baixa">Baixa</button>'+
+      '</div>'+
+      '<div class="field-row">'+
+        '<div class="field"><label>Início</label><input id="f-lstart" type="date" value="'+todayIso()+'"></div>'+
+        '<div class="field"><label>Fim</label><input id="f-lend" type="date" value="'+todayIso()+'"></div>'+
+      '</div>'+
+      '<div class="form-note" id="lv-preview"></div>'+
+      '<div class="modal-actions"><button class="btn btn-ghost" id="l-cancel">Cancelar</button><button class="btn btn-primary" id="l-save">Marcar</button></div>'
+    );
+    function updatePreview(){
+      var s = document.getElementById('f-lstart').value, en = document.getElementById('f-lend').value;
+      var el = document.getElementById('lv-preview');
+      if(!s || !en || parseIso(en) < parseIso(s)){ el.textContent = 'Escolhe um intervalo de datas válido.'; return; }
+      var days = type==='ferias' ? businessDays(s,en) : calendarDays(s,en);
+      var used = approvedDays(emp.id, type, year) + pendingDays(emp.id, type, year);
+      var total = type==='ferias' ? emp.vacationDaysTotal : emp.sickDaysTotal;
+      var remain = total - used;
+      var willBePending = actingUser.role!=='gestor';
+      el.textContent = days + ' dia'+(days!==1?'s':'')+ (type==='ferias' ? ' úteis' : '') + ' · restam '+remain+' de '+total+' este ano' + (willBePending ? ' · fica pendente de aprovação' : '');
+    }
+    m.querySelector('#seg-ferias').addEventListener('click', function(){
+      type='ferias'; this.classList.add('active'); m.querySelector('#seg-baixa').classList.remove('active'); updatePreview();
+    });
+    m.querySelector('#seg-baixa').addEventListener('click', function(){
+      type='baixa'; this.classList.add('active'); this.classList.add('baixa'); m.querySelector('#seg-ferias').classList.remove('active'); updatePreview();
+    });
+    m.querySelector('#f-lstart').addEventListener('input', updatePreview);
+    m.querySelector('#f-lend').addEventListener('input', updatePreview);
+    updatePreview();
+    m.querySelector('#l-cancel').addEventListener('click', closeModal);
+    m.querySelector('#l-save').addEventListener('click', function(){
+      var s = document.getElementById('f-lstart').value, en = document.getElementById('f-lend').value;
+      var errEl = document.getElementById('lv-err');
+      if(!s || !en || parseIso(en) < parseIso(s)){ errEl.textContent='Intervalo de datas inválido.'; errEl.style.display='block'; return; }
+      var days = type==='ferias' ? businessDays(s,en) : calendarDays(s,en);
+      if(days<=0){ errEl.textContent='O intervalo escolhido não tem dias úteis.'; errEl.style.display='block'; return; }
+
+      var overlap = state.leaves.some(function(l){ return l.employeeId===emp.id && leaveStatus(l)!=='rejeitado' && rangesOverlap(s,en,l.start,l.end); });
+      if(overlap){ errEl.textContent='Já existe uma ausência marcada ou pendente nesse período.'; errEl.style.display='block'; return; }
+
+      if(type==='ferias'){
+        var used = approvedDays(emp.id,'ferias',year) + pendingDays(emp.id,'ferias',year);
+        if(used+days > emp.vacationDaysTotal){
+          errEl.textContent = 'Saldo insuficiente: restam '+(emp.vacationDaysTotal-used)+' dias de férias (a contar pedidos pendentes).';
+          errEl.style.display='block'; return;
+        }
+      }
+
+      var isAuto = actingUser.role==='gestor';
+      var lv = { id:uid('l'), employeeId:emp.id, type:type, start:s, end:en, days:days, createdAt:new Date().toISOString(),
+        status: isAuto ? 'aprovado' : 'pendente' };
+      if(isAuto){ lv.respondedBy = actingUser.id; lv.respondedAt = lv.createdAt; }
+      state.leaves.push(lv);
+      closeModal(); persist();
+
+      if(isAuto){
+        showToast(type==='ferias' ? 'Férias marcadas.' : 'Baixa registada.');
+      } else {
+        openPendingConfirmModal(emp, lv);
+      }
+    });
+  }
+
+  function openPendingConfirmModal(emp, lv){
+    var hasManagerEmail = managerEmails().length>0;
+    var m = openModal(
+      '<h3>Pedido enviado</h3>'+
+      '<p class="modal-sub">Fica pendente até o administrador aprovar. Avisa também por email para garantir que é visto a tempo.</p>'+
+      '<div class="modal-actions" style="justify-content:space-between;">'+
+        (hasManagerEmail ? '<a class="btn btn-primary" href="'+notifyMailto(emp,lv)+'" id="p-mail">Abrir email para avisar</a>' : '<span></span>')+
+        '<button class="btn btn-ghost" id="p-close">Fechar</button>'+
+      '</div>'
+    );
+    m.querySelector('#p-close').addEventListener('click', closeModal);
+    var mailBtn = m.querySelector('#p-mail');
+    if(mailBtn) mailBtn.addEventListener('click', closeModal);
+  }
+
+  // ---------------- Boot ----------------
+  if(session && findEmployee(session.employeeId)){
+    enterApp();
+  }
+})();
+</script>
