@@ -226,6 +226,15 @@
   .profile-grid{display:grid; grid-template-columns:1.1fr 1fr; gap:20px;}
   @media (max-width:820px){ .profile-grid{grid-template-columns:1fr;} .main{padding:24px 18px 50px;} }
 
+  @media (min-width:960px){
+    #app-view{flex-direction:row; align-items:stretch;}
+    .topbar{display:none;}
+    .drawer{position:sticky; top:0; align-self:flex-start; height:100vh; transform:none !important; box-shadow:none; flex-shrink:0;}
+    .drawer-backdrop{display:none !important;}
+    .drawer-close{display:none;}
+    .main{padding-top:32px;}
+  }
+
   .balance-card{padding:20px;}
   .balance-row{display:flex; align-items:center; justify-content:space-between; padding:14px 0; border-bottom:1px solid var(--sand);}
   .balance-row:last-child{border-bottom:none;}
@@ -439,8 +448,10 @@
     var pageRows = filtered.slice(teamPage*TEAM_PAGE_SIZE, teamPage*TEAM_PAGE_SIZE+TEAM_PAGE_SIZE);
 
     var html = '<div class="panel"><div class="panel-head"><h3>Colaboradores</h3>'+
+      '<div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">'+
       '<div class="search-input-wrap">'+icon('search')+'<input type="text" id="team-search-input" placeholder="Pesquisar por nome…" value="'+esc(teamSearch)+'"></div>'+
-      '</div><div class="table-wrap"><table><thead><tr><th>Colaborador</th><th>Estado do pedido</th><th></th></tr></thead><tbody>';
+      '<button class="btn btn-primary btn-sm" id="dash-add-emp">+ Novo colaborador</button>'+
+      '</div></div><div class="table-wrap"><table><thead><tr><th>Colaborador</th><th>Estado do pedido</th><th></th></tr></thead><tbody>';
     if(pageRows.length===0){
       html += '<tr><td colspan="3"><div class="empty">Nenhum colaborador encontrado.</div></td></tr>';
     } else {
@@ -760,6 +771,8 @@
     if(searchInput){
       searchInput.addEventListener('input', function(){ teamSearch = searchInput.value; teamPage = 0; renderMain(); refocusTeamSearch(); });
     }
+    var dashAddEmp = document.getElementById('dash-add-emp');
+    if(dashAddEmp) dashAddEmp.addEventListener('click', function(){ openEmployeeModal(null); });
     var teamPrev = document.getElementById('team-prev'), teamNext = document.getElementById('team-next');
     if(teamPrev) teamPrev.addEventListener('click', function(){ teamPage--; renderMain(); });
     if(teamNext) teamNext.addEventListener('click', function(){ teamPage++; renderMain(); });
