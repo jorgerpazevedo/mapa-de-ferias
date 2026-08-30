@@ -266,6 +266,26 @@
   .search-input-wrap input{width:100%; padding:9px 12px 9px 34px; border-radius:9px; border:1px solid var(--sand); background:var(--paper); color:var(--ink); font-size:13.5px;}
   .search-input-wrap input:focus{border-color:var(--accent);}
   .status-detail{font-size:11.5px; color:var(--ink-faint); margin-top:2px;}
+
+  .wallchart-scroll{overflow-x:auto; padding:16px 20px 20px;}
+  .wallchart{min-width:max-content;}
+  .wallchart-row{display:flex; align-items:stretch; border-bottom:1px solid var(--sand);}
+  .wallchart-row:last-child{border-bottom:none;}
+  .wallchart-namecol{position:sticky; left:0; z-index:2; width:190px; flex-shrink:0; background:var(--surface); display:flex; align-items:center; gap:10px; padding:10px 14px 10px 0;}
+  .wallchart-head .wallchart-namecol{background:var(--surface);}
+  .wallchart-days{display:grid; grid-auto-rows:1fr; position:relative; padding:4px 0; flex:1 1 auto;}
+  .wallchart-daylabel{grid-row:1; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:10px; color:var(--ink-faint); font-family:var(--font-mono); padding:4px 0;}
+  .wallchart-daylabel.weekend{background:var(--surface-2);}
+  .wallchart-daylabel .dow{font-size:9px; text-transform:uppercase; color:var(--ink-faint); opacity:.7;}
+  .wallchart-cell{grid-row:1; display:flex; align-items:center; justify-content:center; font-size:11px; font-family:var(--font-mono); color:var(--ink-faint);}
+  .wallchart-cell.weekend{background:var(--surface-2);}
+  .wallchart-cell.today{box-shadow:inset 0 0 0 1.5px var(--ink); border-radius:6px; color:var(--ink); font-weight:700;}
+  .wallchart-bar{grid-row:1; align-self:center; height:22px; margin:0 2px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:600; overflow:hidden; white-space:nowrap; padding:0 4px;}
+  .wallchart-bar.ferias{background:var(--accent); color:var(--accent-ink);}
+  .wallchart-bar.baixa{background:var(--moss); color:#fff;}
+  .wallchart-bar.pendente{background:var(--pending-bg); color:var(--pending); box-shadow:inset 0 0 0 1.5px var(--pending); border-style:dashed;}
+  .wallchart-legend{display:flex; gap:14px; flex-wrap:wrap; padding:0 20px 16px; font-size:11.5px; color:var(--ink-soft);}
+  .wallchart-legend span{display:inline-flex; align-items:center; gap:5px;}
   .table-foot{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 20px; border-top:1px solid var(--sand); font-size:12.5px; color:var(--ink-faint); flex-wrap:wrap;}
   .table-foot .pager{display:flex; align-items:center; gap:6px;}
   .icon-btn:hover{background:var(--surface-2);}
@@ -336,6 +356,8 @@
   var teamSearch = '';
   var teamPage = 0;
   var TEAM_PAGE_SIZE = 8;
+  var wcMonth = new Date().getMonth();
+  var wcYear = new Date().getFullYear();
 
   function todayIso(){ return new Date().toISOString().slice(0,10); }
   function fmt(iso){ if(!iso) return '—'; var p = iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
@@ -384,13 +406,14 @@
   var MONTH_NAMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   var DOW_NAMES = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
   function isoFromYMD(y,m,d){ function pad(n){return (n<10?'0':'')+n;} return y+'-'+pad(m+1)+'-'+pad(d); }
-  function leavesOnDate(dateIso){
+  function leavesOnDate(dateIso, employeeId){
     return state.leaves.filter(function(l){
       if(l.status==='rejeitado') return false;
+      if(employeeId && l.employeeId!==employeeId) return false;
       return parseIso(l.start) <= parseIso(dateIso) && parseIso(dateIso) <= parseIso(l.end);
     });
   }
-  function calendarWidget(){
+  function calendarWidget(employeeId){
     var y=calYear, m=calMonth;
     var first = new Date(y,m,1);
     var startDow = (first.getDay()+6)%7;
@@ -403,7 +426,7 @@
     for(var i=0;i<startDow;i++) html += '<div class="cal-day empty"></div>';
     for(var d=1; d<=daysInMonth; d++){
       var iso = isoFromYMD(y,m,d);
-      var dayLeaves = leavesOnDate(iso);
+      var dayLeaves = leavesOnDate(iso, employeeId);
       var cls = 'cal-day';
       if(iso===todayStr) cls += ' today';
       if(dayLeaves.length){
@@ -623,13 +646,71 @@
     document.querySelectorAll('[data-reject]').forEach(function(b){ b.addEventListener('click', function(){ respondLeave(b.getAttribute('data-reject'), 'rejeitado'); }); });
   }
 
+  function dayOfMonth(iso){ return parseInt(iso.slice(8,10),10); }
+  function clampToMonth(iso, y, m){
+    var lo = isoFromYMD(y,m,1), hi = isoFromYMD(y,m,new Date(y,m+1,0).getDate());
+    return iso<lo ? lo : (iso>hi ? hi : iso);
+  }
+
   function viewTeamCalendar(){
-    return '<div class="page-head"><div><h2>Calendário da Equipa</h2><p>Vista mensal para controlo de sobreposição de ausências.</p></div></div>' + calendarWidget();
+    var y=wcYear, m=wcMonth;
+    var daysInMonth = new Date(y,m+1,0).getDate();
+    var todayStr = todayIso();
+
+    var html = '<div class="page-head"><div><h2>Calendário da Equipa</h2><p>Vista horizontal para controlo de sobreposição de ausências.</p></div>'+
+      '<button class="btn btn-primary" id="wc-mark">+ Marcar ausência</button></div>';
+
+    html += '<div class="panel"><div class="panel-head"><h3>'+MONTH_NAMES[m]+' '+y+'</h3><div class="cal-nav"><button type="button" id="wc-prev">‹</button><button type="button" id="wc-next">›</button></div></div>';
+    html += '<div class="wallchart-scroll"><div class="wallchart">';
+
+    var colStyle = 'grid-template-columns:repeat('+daysInMonth+',minmax(28px,1fr));';
+
+    html += '<div class="wallchart-row wallchart-head"><div class="wallchart-namecol"></div><div class="wallchart-days" style="'+colStyle+'">';
+    for(var d=1; d<=daysInMonth; d++){
+      var iso = isoFromYMD(y,m,d);
+      var dow = new Date(y,m,d).getDay();
+      var weekend = (dow===0 || dow===6);
+      html += '<div class="wallchart-daylabel'+(weekend?' weekend':'')+'" style="grid-column:'+d+';"><span class="dow">'+DOW_NAMES[(dow+6)%7]+'</span>'+d+'</div>';
+    }
+    html += '</div></div>';
+
+    state.employees.forEach(function(e){
+      html += '<div class="wallchart-row"><div class="wallchart-namecol">'+
+        '<div class="avatar">'+esc(initials(e.name))+'</div><div><div class="li-name">'+esc(e.name)+'</div><div class="li-sub">'+(e.role==='gestor'?'Gestor':'Colaborador')+'</div></div>'+
+        '<button class="icon-btn" title="Marcar ausência" data-mark="'+e.id+'" data-name="'+esc(e.name)+'" style="margin-left:auto;">🗓️</button>'+
+        '</div><div class="wallchart-days" style="'+colStyle+'">';
+      for(var d2=1; d2<=daysInMonth; d2++){
+        var iso2 = isoFromYMD(y,m,d2);
+        var dow2 = new Date(y,m,d2).getDay();
+        var weekend2 = (dow2===0 || dow2===6);
+        var cls = 'wallchart-cell'+(weekend2?' weekend':'')+(iso2===todayStr?' today':'');
+        html += '<div class="'+cls+'" style="grid-column:'+d2+';">'+d2+'</div>';
+      }
+      var empLeaves = state.leaves.filter(function(l){
+        return l.employeeId===e.id && l.status!=='rejeitado' && l.start<=isoFromYMD(y,m,daysInMonth) && l.end>=isoFromYMD(y,m,1);
+      });
+      empLeaves.forEach(function(l){
+        var s = dayOfMonth(clampToMonth(l.start,y,m));
+        var en = dayOfMonth(clampToMonth(l.end,y,m));
+        html += '<div class="wallchart-bar '+(l.status==='pendente'?'pendente':l.type)+'" style="grid-column:'+s+' / '+(en+1)+';" title="'+esc(l.employeeName)+' · '+chipLabel(l.type)+' · '+fmt(l.start)+' – '+fmt(l.end)+'">'+chipLabel(l.type)+'</div>';
+      });
+      html += '</div></div>';
+    });
+
+    html += '</div></div>';
+    html += '<div class="wallchart-legend"><span><span class="cal-dot" style="background:var(--accent)"></span>Férias</span><span><span class="cal-dot" style="background:var(--moss)"></span>Baixa</span><span><span class="cal-dot" style="background:var(--pending)"></span>Pendente</span></div>';
+    html += '</div>';
+    return html;
   }
   function wireTeamCalendar(){
-    var prev = document.getElementById('cal-prev'), next = document.getElementById('cal-next');
-    if(prev) prev.addEventListener('click', function(){ calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderMain(); });
-    if(next) next.addEventListener('click', function(){ calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderMain(); });
+    var prev = document.getElementById('wc-prev'), next = document.getElementById('wc-next');
+    if(prev) prev.addEventListener('click', function(){ wcMonth--; if(wcMonth<0){wcMonth=11;wcYear--;} renderMain(); });
+    if(next) next.addEventListener('click', function(){ wcMonth++; if(wcMonth>11){wcMonth=0;wcYear++;} renderMain(); });
+    var markBtn = document.getElementById('wc-mark');
+    if(markBtn) markBtn.addEventListener('click', function(){ openLeaveModal(state.me.id, state.me.name); });
+    document.querySelectorAll('[data-mark]').forEach(function(btn){
+      btn.addEventListener('click', function(){ openLeaveModal(btn.getAttribute('data-mark'), btn.getAttribute('data-name')); });
+    });
   }
 
   function viewReports(){
@@ -736,7 +817,7 @@
 
     html += '<div class="profile-grid">';
     html += balanceCard(me, 'Saldo '+new Date().getFullYear());
-    html += calendarWidget();
+    html += calendarWidget(me.id);
     html += '</div>';
 
     html += '<div class="panel"><div class="panel-head"><h3>'+(me.role==='gestor'?'Próximas ausências (equipa)':'As tuas próximas ausências')+'</h3></div><div class="panel-body pad">';
