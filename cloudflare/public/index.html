@@ -86,7 +86,7 @@
   .field label{display:block; font-size:12.5px; font-weight:600; letter-spacing:.02em; color:var(--ink-soft); margin-bottom:6px; text-transform:uppercase;}
   .field input, .field select{width:100%; padding:11px 13px; border-radius:10px; border:1px solid var(--sand); background:var(--paper); color:var(--ink);}
   .field input:focus, .field select:focus{border-color:var(--accent);}
-  .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:11px 18px; border-radius:10px; border:1px solid transparent; font-weight:600; font-size:14.5px; transition:transform .08s ease, opacity .15s ease;}
+  .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:11px 18px; border-radius:10px; border:1px solid transparent; font-weight:600; font-size:14.5px; transition:transform .08s ease, opacity .15s ease; text-decoration:none;}
   .btn:active{transform:scale(.98);}
   .btn-primary{background:var(--accent); color:var(--accent-ink);}
   .btn-primary:hover{opacity:.92;}
@@ -219,7 +219,7 @@
   .list-item{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 10px; border-bottom:1px solid var(--sand);}
   .list-item:last-child{border-bottom:none;}
   .list-item-main{display:flex; align-items:center; gap:12px; min-width:0;}
-  .avatar{width:34px;height:34px;border-radius:50%; background:var(--surface-2); color:var(--ink-soft); display:flex; align-items:center; justify-content:center; font-weight:600; font-size:13px; flex-shrink:0;}
+  .avatar{width:34px;height:34px;border-radius:50%; background:var(--surface-2); color:var(--ink-soft); display:flex; align-items:center; justify-content:center; font-weight:600; font-size:13px; flex-shrink:0; object-fit:cover;}
   .li-name{font-weight:600; font-size:13.5px;}
   .li-sub{font-size:12px; color:var(--ink-faint);}
 
@@ -270,7 +270,16 @@
   .breadcrumb{font-size:12.5px; color:var(--ink-faint); margin-bottom:10px;}
   .breadcrumb button{background:none; border:none; color:var(--ink-soft); font-weight:600; cursor:pointer; padding:0; font-size:inherit; font-family:inherit;}
   .breadcrumb button:hover{color:var(--accent-ink); text-decoration:underline;}
-  .avatar-lg{width:64px; height:64px; border-radius:50%; background:var(--surface-2); color:var(--ink-soft); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:22px; flex-shrink:0;}
+  .avatar-lg{width:64px; height:64px; border-radius:50%; background:var(--surface-2); color:var(--ink-soft); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:22px; flex-shrink:0; object-fit:cover;}
+  .avatar-upload-wrap{position:relative; flex-shrink:0;}
+  .avatar-upload-btn{position:absolute; bottom:-2px; right:-2px; width:24px; height:24px; border-radius:50%; background:var(--accent); color:var(--accent-ink); border:2px solid var(--surface); display:flex; align-items:center; justify-content:center; font-size:11px; cursor:pointer; padding:0;}
+  .avatar-upload-btn:hover{opacity:.9;}
+  .comm-link{display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:10px; border:1px solid var(--sand); color:var(--ink); margin-bottom:8px;}
+  .comm-link:last-child{margin-bottom:0;}
+  .comm-link:hover{background:var(--surface-2);}
+  .comm-link svg{width:18px; height:18px; flex-shrink:0; color:var(--ink-soft);}
+  .comm-link-label{font-size:11px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.03em;}
+  .comm-link-value{font-weight:600; font-size:13.5px;}
   .profile-header{display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-bottom:24px;}
   .profile-header-info h2{margin-bottom:4px;}
   .profile-header-actions{display:flex; gap:10px; margin-left:auto; flex-wrap:wrap;}
@@ -386,6 +395,45 @@
     return count;
   }
   function initials(name){ var p=(name||'?').trim().split(/\s+/); return ((p[0]||'')[0]||'')+((p[p.length-1]||'')[0]||''); }
+  function employeeById(id){ return (state && state.employees ? state.employees : []).find(function(e){ return e.id===id; }); }
+  function avatarHtml(person, cls){
+    cls = cls || 'avatar';
+    if(person && person.photo) return '<img class="'+cls+'" src="'+esc(person.photo)+'" alt="">';
+    return '<div class="'+cls+'">'+esc(initials(person?person.name:'?'))+'</div>';
+  }
+  function onlyDigits(s){ return (s||'').replace(/\D/g,''); }
+
+  function resizePhotoFile(file){
+    return new Promise(function(resolve, reject){
+      var img = new Image();
+      var reader = new FileReader();
+      reader.onerror = function(){ reject(new Error('Não foi possível ler o ficheiro.')); };
+      reader.onload = function(){
+        img.onerror = function(){ reject(new Error('Ficheiro de imagem inválido.')); };
+        img.onload = function(){
+          var size = 200;
+          var canvas = document.createElement('canvas');
+          canvas.width = size; canvas.height = size;
+          var ctx = canvas.getContext('2d');
+          var side = Math.min(img.width, img.height);
+          var sx = (img.width-side)/2, sy = (img.height-side)/2;
+          ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  async function uploadPhotoFor(empId, file){
+    try{
+      var dataUrl = await resizePhotoFile(file);
+      var isSelf = state.me.id===empId;
+      await api(isSelf ? 'me/photo' : 'employees/'+empId+'/photo', {method:'PUT', body: JSON.stringify({photo: dataUrl})});
+      await loadState();
+      showToast('Foto atualizada.');
+    }catch(e){ showToast(e.message || 'Não foi possível carregar a foto.'); }
+  }
 
   async function api(path, opts){
     opts = opts || {};
@@ -517,7 +565,7 @@
         var st = employeeCurrentStatus(e.id);
         var isPending = st.chip.indexOf('chip-pendente')!==-1;
         var pendingLeave = isPending ? state.leaves.filter(function(l){return l.employeeId===e.id && l.status==='pendente';}).sort(function(a,b){return a.start<b.start?-1:1;})[0] : null;
-        html += '<tr><td><div class="list-item-main"><div class="avatar">'+esc(initials(e.name))+'</div><div><div class="li-name">'+esc(e.name)+'</div><div class="li-sub">'+esc(e.contact||'@'+e.username)+'</div></div></div></td>'+
+        html += '<tr><td><div class="list-item-main">'+avatarHtml(e)+'<div><div class="li-name">'+esc(e.name)+'</div><div class="li-sub">'+esc(e.email||e.phone||'@'+e.username)+'</div></div></div></td>'+
           '<td>'+st.chip+'<div class="status-detail">'+esc(st.detail)+'</div></td>'+
           '<td><div class="row-actions">'+
           (pendingLeave ? '<button class="btn btn-sm btn-reject" data-reject="'+pendingLeave.id+'">Rejeitar</button><button class="btn btn-sm btn-approve" data-approve="'+pendingLeave.id+'">Aprovar</button>' : '<button class="btn btn-ghost btn-sm" data-view-emp="'+e.id+'">Ver perfil</button>')+
@@ -568,7 +616,10 @@
     users: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.6"/><path d="M15.7 20a4.3 4.3 0 0 1 5.3-4.2"/>',
     settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 13a7.97 7.97 0 0 0 0-2l2-1.6-2-3.4-2.4.8a8 8 0 0 0-1.7-1L14.8 3h-4l-.5 2.8a8 8 0 0 0-1.7 1l-2.4-.8-2 3.4L6 12a7.97 7.97 0 0 0 0 2l-2 1.6 2 3.4 2.4-.8a8 8 0 0 0 1.7 1l.5 2.8h4l.5-2.8a8 8 0 0 0 1.7-1l2.4.8 2-3.4-2-1.6z"/>',
     help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.7 2.2c-.9.5-1.2 1-1.2 2.1"/><line x1="12" y1="17" x2="12" y2="17.01"/>',
-    search: '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/>'
+    search: '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/>',
+    mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+    whatsapp: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-4.1-1.1L3 20l1.2-5.2A8.5 8.5 0 1 1 21 11.5z"/><path d="M8.5 9.5c.3 2.5 2.5 4.7 5 5"/>',
+    camera: '<path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.3"/>'
   };
   function icon(name){
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(ICON_PATHS[name]||'')+'</svg>';
@@ -607,9 +658,13 @@
     if(!me) return;
     var pendingCount = me.role==='gestor' ? state.leaves.filter(function(l){return l.status==='pendente';}).length : 0;
     var vRemain = me.vacationDaysTotal - me.balances.ferias.aprovado;
-    var ini = esc(initials(me.name));
-    document.getElementById('drawer-avatar').textContent = ini;
-    document.getElementById('topbar-avatar').textContent = ini;
+    if(me.photo){
+      document.getElementById('drawer-avatar').innerHTML = '<img src="'+esc(me.photo)+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+      document.getElementById('topbar-avatar').innerHTML = '<img src="'+esc(me.photo)+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+    } else {
+      document.getElementById('drawer-avatar').textContent = initials(me.name);
+      document.getElementById('topbar-avatar').textContent = initials(me.name);
+    }
     document.getElementById('drawer-name').textContent = me.name;
     document.getElementById('drawer-role').textContent = me.role==='gestor' ? 'Gestor' : 'Colaborador';
     document.getElementById('drawer-balance').textContent = vRemain+' dias restantes';
@@ -670,7 +725,7 @@
       html += '<div class="empty">Sem pedidos pendentes.</div>';
     } else {
       pending.forEach(function(l){
-        html += '<div class="req-row"><div class="list-item-main"><div class="avatar">'+esc(initials(l.employeeName))+'</div><div><div class="li-name">'+esc(l.employeeName)+'</div><div class="li-sub">'+chipLabel(l.type)+' · '+fmt(l.start)+' – '+fmt(l.end)+' · '+l.days+' dia'+(l.days!==1?'s':'')+'</div></div></div>'+
+        html += '<div class="req-row"><div class="list-item-main">'+avatarHtml(employeeById(l.employeeId)||{name:l.employeeName})+'<div><div class="li-name">'+esc(l.employeeName)+'</div><div class="li-sub">'+chipLabel(l.type)+' · '+fmt(l.start)+' – '+fmt(l.end)+' · '+l.days+' dia'+(l.days!==1?'s':'')+'</div></div></div>'+
           '<div class="req-actions"><button class="btn btn-sm btn-reject" data-reject="'+l.id+'">Rejeitar</button><button class="btn btn-sm btn-approve" data-approve="'+l.id+'">Aprovar</button></div></div>';
       });
     }
@@ -712,7 +767,7 @@
 
     state.employees.forEach(function(e){
       html += '<div class="wallchart-row"><div class="wallchart-namecol">'+
-        '<div class="avatar">'+esc(initials(e.name))+'</div><div><div class="li-name">'+esc(e.name)+'</div><div class="li-sub">'+(e.role==='gestor'?'Gestor':'Colaborador')+'</div></div>'+
+        avatarHtml(e)+'<div><div class="li-name">'+esc(e.name)+'</div><div class="li-sub">'+esc(e.jobTitle||(e.role==='gestor'?'Gestor':'Colaborador'))+'</div></div>'+
         '<button class="icon-btn" title="Marcar ausência" data-mark="'+e.id+'" data-name="'+esc(e.name)+'" style="margin-left:auto;">🗓️</button>'+
         '</div><div class="wallchart-days" style="'+colStyle+'">';
       for(var d2=1; d2<=daysInMonth; d2++){
@@ -841,7 +896,7 @@
     if(me.role==='gestor' && pending.length>0){
       html += '<div class="panel panel-attention"><div class="panel-head"><h3>Pedidos pendentes</h3></div><div class="panel-body pad" style="padding-top:2px;">';
       pending.forEach(function(l){
-        html += '<div class="req-row"><div class="list-item-main"><div class="avatar">'+esc(initials(l.employeeName))+'</div><div><div class="li-name">'+esc(l.employeeName)+'</div><div class="li-sub">'+chipLabel(l.type)+' · '+fmt(l.start)+' – '+fmt(l.end)+' · '+l.days+' dia'+(l.days!==1?'s':'')+'</div></div></div>'+
+        html += '<div class="req-row"><div class="list-item-main">'+avatarHtml(employeeById(l.employeeId)||{name:l.employeeName})+'<div><div class="li-name">'+esc(l.employeeName)+'</div><div class="li-sub">'+chipLabel(l.type)+' · '+fmt(l.start)+' – '+fmt(l.end)+' · '+l.days+' dia'+(l.days!==1?'s':'')+'</div></div></div>'+
           '<div class="req-actions"><button class="btn btn-sm btn-reject" data-reject="'+l.id+'">Rejeitar</button><button class="btn btn-sm btn-approve" data-approve="'+l.id+'">Aprovar</button></div></div>';
       });
       html += '</div></div>';
@@ -862,7 +917,7 @@
       html += '<div class="empty">Sem ausências agendadas.</div>';
     } else {
       list.forEach(function(l){
-        html += '<div class="list-item"><div class="list-item-main"><div class="avatar">'+esc(initials(l.employeeName))+'</div><div><div class="li-name">'+esc(l.employeeName)+'</div><div class="li-sub">'+fmt(l.start)+' – '+fmt(l.end)+' · '+l.days+' dia'+(l.days!==1?'s':'')+'</div></div></div>'+
+        html += '<div class="list-item"><div class="list-item-main">'+avatarHtml(employeeById(l.employeeId)||{name:l.employeeName})+'<div><div class="li-name">'+esc(l.employeeName)+'</div><div class="li-sub">'+fmt(l.start)+' – '+fmt(l.end)+' · '+l.days+' dia'+(l.days!==1?'s':'')+'</div></div></div>'+
           '<div class="chip-row">'+chip(l.type)+statusChip(l.status)+'</div></div>';
       });
     }
@@ -921,10 +976,16 @@
     var html = '<div class="page-head"><div><h2>As minhas férias</h2><p>Marca novas ausências e consulta o histórico.</p></div>'+
       '<button class="btn btn-primary" id="mine-mark">+ Marcar ausência</button></div>';
 
+    html += '<div class="profile-header" style="margin-bottom:20px;">'+
+      '<div class="avatar-upload-wrap">'+avatarHtml(me,'avatar-lg')+'<button type="button" class="avatar-upload-btn" id="mine-photo-btn" title="Alterar foto">'+icon('camera')+'</button><input type="file" accept="image/*" id="mine-photo-input" class="hidden"></div>'+
+      '<div class="profile-header-info"><h2>'+esc(me.name)+'</h2><p style="color:var(--ink-soft);font-size:13.5px;margin:2px 0 0;">'+esc(me.jobTitle||(me.role==='gestor'?'Gestor':'Colaborador'))+'</p></div>'+
+      '</div>';
+
     html += '<div class="profile-grid">';
     html += balanceCard(me, 'Saldo '+new Date().getFullYear());
     html += '<div class="panel"><div class="panel-head"><h3>Contacto</h3><button class="btn btn-ghost btn-sm" id="edit-contact">Editar</button></div><div class="panel-body pad">'+
-      '<div class="balance-row"><div class="balance-title">Contacto</div><div>'+esc(me.contact||'—')+'</div></div>'+
+      '<div class="balance-row"><div class="balance-title">Email</div><div>'+esc(me.email||'—')+'</div></div>'+
+      '<div class="balance-row"><div class="balance-title">Telefone</div><div>'+esc(me.phone||'—')+'</div></div>'+
       '<div class="balance-row"><div class="balance-title">Data de início</div><div>'+fmt(me.startDate)+'</div></div>'+
       '</div></div>';
     html += '</div>';
@@ -949,6 +1010,13 @@
     if(b1) b1.addEventListener('click', function(){ openLeaveModal(me.id, me.name); });
     var ec = document.getElementById('edit-contact');
     if(ec) ec.addEventListener('click', openContactModal);
+    var photoBtn = document.getElementById('mine-photo-btn'), photoInput = document.getElementById('mine-photo-input');
+    if(photoBtn && photoInput){
+      photoBtn.addEventListener('click', function(){ photoInput.click(); });
+      photoInput.addEventListener('change', function(){
+        if(photoInput.files && photoInput.files[0]) uploadPhotoFor(me.id, photoInput.files[0]);
+      });
+    }
     document.querySelectorAll('[data-cancel]').forEach(function(btn){
       btn.addEventListener('click', async function(){
         if(!confirm('Cancelar esta ausência?')) return;
@@ -969,7 +1037,7 @@
 
     var html = '<div class="breadcrumb"><button type="button" id="back-to-team">Colaboradores</button> › Perfil</div>';
     html += '<div class="profile-header">'+
-      '<div class="avatar-lg">'+esc(initials(emp.name))+'</div>'+
+      '<div class="avatar-upload-wrap">'+avatarHtml(emp,'avatar-lg')+'<button type="button" class="avatar-upload-btn" id="detail-photo-btn" title="Alterar foto">'+icon('camera')+'</button><input type="file" accept="image/*" id="detail-photo-input" class="hidden"></div>'+
       '<div class="profile-header-info"><h2>'+esc(emp.name)+'</h2><p style="color:var(--ink-soft);font-size:13.5px;margin:2px 0 6px;">'+esc(emp.jobTitle||(emp.role==='gestor'?'Gestor':'Colaborador'))+'</p>'+employeeStatusBadge(emp)+'</div>'+
       '<div class="profile-header-actions"><button class="btn btn-ghost btn-sm" id="detail-mark">🗓️ Marcar ausência</button><button class="btn btn-primary btn-sm" id="detail-edit">✎ Editar</button></div>'+
       '</div>';
@@ -981,10 +1049,25 @@
       '<div class="kv-row"><span class="kv-label">Data de início</span><span class="kv-value">'+fmt(emp.startDate)+'</span></div>'+
       '<div class="kv-row"><span class="kv-label">Fim do contrato</span><span class="kv-value">'+contractEndText+'</span></div>'+
       '<div class="kv-row"><span class="kv-label">Antiguidade</span><span class="kv-value">'+yearsOfService(emp.startDate)+' anos</span></div>'+
-      '<div class="kv-row"><span class="kv-label">Contacto</span><span class="kv-value">'+esc(emp.contact||'—')+'</span></div>'+
       '<div class="kv-row"><span class="kv-label">Utilizador</span><span class="kv-value mono">@'+esc(emp.username)+'</span></div>'+
       '</div></div>';
     html += balanceCard(emp, 'Saldo '+new Date().getFullYear());
+    html += '</div>';
+
+    html += '<div class="profile-grid">';
+    html += '<div class="panel"><div class="panel-head"><h3>Comunicação</h3></div><div class="panel-body pad">';
+    if(!emp.email && !emp.phone){
+      html += emptyState('mail','Sem contactos','Edita o colaborador para adicionar um email ou telefone.');
+    } else {
+      if(emp.email) html += '<a class="comm-link" href="mailto:'+esc(emp.email)+'" target="_blank" rel="noopener">'+icon('mail')+'<div><div class="comm-link-label">Email</div><div class="comm-link-value">'+esc(emp.email)+'</div></div></a>';
+      if(emp.phone) html += '<a class="comm-link" href="https://wa.me/'+onlyDigits(emp.phone)+'" target="_blank" rel="noopener">'+icon('whatsapp')+'<div><div class="comm-link-label">WhatsApp</div><div class="comm-link-value">'+esc(emp.phone)+'</div></div></a>';
+    }
+    html += '</div></div>';
+    html += '<div class="panel"><div class="panel-head"><h3>Notas</h3></div><div class="panel-body pad">'+
+      '<textarea id="detail-notes" rows="4" placeholder="Notas internas sobre este colaborador…" style="width:100%;border:1px solid var(--sand);border-radius:10px;padding:10px 12px;background:var(--paper);color:var(--ink);font-family:inherit;font-size:13.5px;resize:vertical;">'+esc(emp.notes||'')+'</textarea>'+
+      '<div style="display:flex;justify-content:flex-end;margin-top:10px;"><button class="btn btn-primary btn-sm" id="detail-notes-save">Guardar notas</button></div>'+
+      '<div class="form-note">Visível apenas para gestores.</div>'+
+      '</div></div>';
     html += '</div>';
 
     html += '<div class="panel"><div class="panel-head"><h3>Histórico de ausências</h3></div><div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Início</th><th>Fim</th><th>Dias</th><th>Estado</th><th></th></tr></thead><tbody>';
@@ -1011,6 +1094,23 @@
     if(markBtn) markBtn.addEventListener('click', function(){ openLeaveModal(emp.id, emp.name); });
     var editBtn = document.getElementById('detail-edit');
     if(editBtn) editBtn.addEventListener('click', function(){ openEmployeeModal(emp); });
+    var photoBtn = document.getElementById('detail-photo-btn'), photoInput = document.getElementById('detail-photo-input');
+    if(photoBtn && photoInput){
+      photoBtn.addEventListener('click', function(){ photoInput.click(); });
+      photoInput.addEventListener('change', function(){
+        if(photoInput.files && photoInput.files[0]) uploadPhotoFor(emp.id, photoInput.files[0]);
+      });
+    }
+    var notesSave = document.getElementById('detail-notes-save');
+    if(notesSave){
+      notesSave.addEventListener('click', async function(){
+        try{
+          await api('employees/'+emp.id+'/notes', {method:'PUT', body: JSON.stringify({notes: document.getElementById('detail-notes').value})});
+          showToast('Notas guardadas.');
+          await loadState();
+        }catch(e){ showToast(e.message); }
+      });
+    }
     document.querySelectorAll('[data-approve]').forEach(function(b){ b.addEventListener('click', function(){ respondLeave(b.getAttribute('data-approve'), 'aprovado'); }); });
     document.querySelectorAll('[data-reject]').forEach(function(b){ b.addEventListener('click', function(){ respondLeave(b.getAttribute('data-reject'), 'rejeitado'); }); });
     document.querySelectorAll('[data-cancel]').forEach(function(btn){
@@ -1042,7 +1142,7 @@
       pageRows.forEach(function(e){
         var b = e.balances;
         var vRemain = e.vacationDaysTotal - b.ferias.aprovado, sRemain = e.sickDaysTotal - b.baixa.aprovado;
-        html += '<tr><td><div class="list-item-main"><div class="avatar">'+esc(initials(e.name))+'</div><div><div class="li-name">'+esc(e.name)+'</div><div class="li-sub">'+esc(e.jobTitle||(e.role==='gestor'?'Gestor':'Colaborador'))+'</div></div></div></td>'+
+        html += '<tr><td><div class="list-item-main">'+avatarHtml(e)+'<div><div class="li-name">'+esc(e.name)+'</div><div class="li-sub">'+esc(e.jobTitle||(e.role==='gestor'?'Gestor':'Colaborador'))+'</div></div></div></td>'+
           '<td class="mono">'+fmt(e.startDate)+'</td>'+
           '<td>'+employeeStatusBadge(e)+'</td>'+
           '<td class="bal">'+b.ferias.aprovado+'/'+e.vacationDaysTotal+' <span class="'+(vRemain<0?'low':'')+'">('+vRemain+' restam)</span>'+(b.ferias.pendente>0?'<div class="pending-note">+'+b.ferias.pendente+' pend.</div>':'')+'</td>'+
@@ -1113,13 +1213,17 @@
     var me = state.me;
     var m = openModal(
       '<h3>Editar contacto</h3><p class="modal-sub">'+esc(me.name)+'</p>'+
-      '<div class="field"><label>Email ou telefone</label><input id="f-contact" value="'+esc(me.contact||'')+'"></div>'+
+      '<div class="field"><label>Email</label><input id="f-email" type="email" value="'+esc(me.email||'')+'"></div>'+
+      '<div class="field"><label>Telefone (WhatsApp)</label><input id="f-phone" value="'+esc(me.phone||'')+'"></div>'+
       '<div class="modal-actions"><button class="btn btn-ghost" id="c-cancel">Cancelar</button><button class="btn btn-primary" id="c-save">Guardar</button></div>'
     );
     m.querySelector('#c-cancel').addEventListener('click', closeModal);
     m.querySelector('#c-save').addEventListener('click', async function(){
       try{
-        await api('me/contact', {method:'PUT', body: JSON.stringify({contact: document.getElementById('f-contact').value.trim()})});
+        await api('me/contact', {method:'PUT', body: JSON.stringify({
+          email: document.getElementById('f-email').value.trim(),
+          phone: document.getElementById('f-phone').value.trim()
+        })});
         closeModal(); await loadState();
       }catch(e){ showToast(e.message); }
     });
@@ -1127,7 +1231,7 @@
 
   function openEmployeeModal(emp){
     var isNew = !emp;
-    var e = emp || { id:null, name:'', startDate: todayIso(), contact:'', username:'', role:'colaborador', vacationDaysTotal:22, sickDaysTotal:3, jobTitle:'', contractType:'efetivo', contractEnd:'' };
+    var e = emp || { id:null, name:'', startDate: todayIso(), email:'', phone:'', username:'', role:'colaborador', vacationDaysTotal:22, sickDaysTotal:3, jobTitle:'', contractType:'efetivo', contractEnd:'' };
     var contractOptions = CONTRACT_TYPES.map(function(c){ return '<option value="'+c.value+'"'+(e.contractType===c.value?' selected':'')+'>'+c.label+'</option>'; }).join('');
     var m = openModal(
       '<h3>'+(isNew?'Novo colaborador':'Editar colaborador')+'</h3><p class="modal-sub">Preenche os dados, o contrato e o acesso de login.</p>'+
@@ -1144,7 +1248,10 @@
         '<div class="field"><label>Tipo de contrato</label><select id="f-contract-type">'+contractOptions+'</select></div>'+
         '<div class="field" id="f-contract-end-wrap"><label>Fim do contrato</label><input id="f-contract-end" type="date" value="'+(e.contractEnd||'')+'"></div>'+
       '</div>'+
-      '<div class="field"><label>Contacto (email ou telefone)</label><input id="f-contact" value="'+esc(e.contact)+'"></div>'+
+      '<div class="field-row">'+
+        '<div class="field"><label>Email</label><input id="f-email" type="email" value="'+esc(e.email||'')+'"></div>'+
+        '<div class="field"><label>Telefone (WhatsApp)</label><input id="f-phone" value="'+esc(e.phone||'')+'"></div>'+
+      '</div>'+
       '<div class="field-row">'+
         '<div class="field"><label>Dias de férias / ano</label><input id="f-vac" type="number" min="0" value="'+e.vacationDaysTotal+'"></div>'+
         '<div class="field"><label>Dias de baixa / ano</label><input id="f-sick" type="number" min="0" value="'+e.sickDaysTotal+'"></div>'+
@@ -1175,7 +1282,8 @@
         name: name, username: username,
         startDate: document.getElementById('f-start').value || todayIso(),
         role: document.getElementById('f-role').value,
-        contact: document.getElementById('f-contact').value.trim(),
+        email: document.getElementById('f-email').value.trim(),
+        phone: document.getElementById('f-phone').value.trim(),
         vacationDaysTotal: parseInt(document.getElementById('f-vac').value,10) || 0,
         sickDaysTotal: parseInt(document.getElementById('f-sick').value,10) || 0,
         jobTitle: document.getElementById('f-job').value.trim(),

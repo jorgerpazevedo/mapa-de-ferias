@@ -12,6 +12,10 @@ CREATE TABLE IF NOT EXISTS employees (
   job_title TEXT,
   contract_type TEXT NOT NULL DEFAULT 'efetivo',
   contract_end TEXT,
+  email TEXT,
+  phone TEXT,
+  notes TEXT,
+  photo TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

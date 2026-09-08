@@ -93,6 +93,10 @@ export function publicEmployee(e) {
     jobTitle: e.job_title,
     contractType: e.contract_type || 'efetivo',
     contractEnd: e.contract_end,
+    email: e.email,
+    phone: e.phone,
+    notes: e.notes,
+    photo: e.photo,
   };
 }
 

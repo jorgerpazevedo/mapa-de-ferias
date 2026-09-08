@@ -150,16 +150,18 @@ async function handleCreateEmployee(request, env, me) {
   const hash = await hashPassword(password, salt);
   const id = uid('e');
   await env.DB.prepare(
-    `INSERT INTO employees (id, name, start_date, contact, username, password_hash, password_salt, role, vacation_days_total, sick_days_total, job_title, contract_type, contract_end)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO employees (id, name, start_date, username, password_hash, password_salt, role, vacation_days_total, sick_days_total, job_title, contract_type, contract_end, email, phone)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
-    id, name, body.startDate || new Date().toISOString().slice(0, 10), body.contact || '', username, hash, salt,
+    id, name, body.startDate || new Date().toISOString().slice(0, 10), username, hash, salt,
     body.role === 'gestor' ? 'gestor' : 'colaborador',
     Math.max(0, parseInt(body.vacationDaysTotal, 10) || 22),
     Math.max(0, parseInt(body.sickDaysTotal, 10) || 3),
     (body.jobTitle || '').trim() || null,
     normalizeContractType(body.contractType),
-    body.contractEnd || null
+    body.contractEnd || null,
+    (body.email || '').trim() || null,
+    (body.phone || '').trim() || null
   ).run();
   return json({ ok: true, id });
 }
@@ -183,15 +185,17 @@ async function handleUpdateEmployee(request, env, me, empId) {
   }
 
   await env.DB.prepare(
-    `UPDATE employees SET name=?, start_date=?, contact=?, username=?, password_hash=?, password_salt=?, role=?, vacation_days_total=?, sick_days_total=?, job_title=?, contract_type=?, contract_end=? WHERE id=?`
+    `UPDATE employees SET name=?, start_date=?, username=?, password_hash=?, password_salt=?, role=?, vacation_days_total=?, sick_days_total=?, job_title=?, contract_type=?, contract_end=?, email=?, phone=? WHERE id=?`
   ).bind(
-    name, body.startDate || target.start_date, body.contact || '', username, passwordHash, passwordSalt,
+    name, body.startDate || target.start_date, username, passwordHash, passwordSalt,
     body.role === 'gestor' ? 'gestor' : 'colaborador',
     Math.max(0, parseInt(body.vacationDaysTotal, 10) || 0),
     Math.max(0, parseInt(body.sickDaysTotal, 10) || 0),
     (body.jobTitle || '').trim() || null,
     normalizeContractType(body.contractType),
     body.contractEnd || null,
+    (body.email || '').trim() || null,
+    (body.phone || '').trim() || null,
     empId
   ).run();
   return json({ ok: true });
@@ -206,8 +210,29 @@ async function handleDeleteEmployee(request, env, me, empId) {
 
 async function handleUpdateContact(request, env, me) {
   const body = await request.json().catch(() => ({}));
-  const contact = (body.contact || '').trim();
-  await env.DB.prepare('UPDATE employees SET contact = ? WHERE id = ?').bind(contact, me.id).run();
+  const email = (body.email || '').trim() || null;
+  const phone = (body.phone || '').trim() || null;
+  await env.DB.prepare('UPDATE employees SET email = ?, phone = ? WHERE id = ?').bind(email, phone, me.id).run();
+  return json({ ok: true });
+}
+
+const MAX_PHOTO_LENGTH = 400000;
+
+async function handleUpdatePhoto(request, env, id) {
+  const body = await request.json().catch(() => ({}));
+  const photo = body.photo || null;
+  if (photo && (typeof photo !== 'string' || !photo.startsWith('data:image/') || photo.length > MAX_PHOTO_LENGTH)) {
+    return json({ error: 'Imagem inválida ou demasiado grande.' }, { status: 400 });
+  }
+  await env.DB.prepare('UPDATE employees SET photo = ? WHERE id = ?').bind(photo, id).run();
+  return json({ ok: true });
+}
+
+async function handleUpdateNotes(request, env, me, empId) {
+  if (me.role !== 'gestor') return json({ error: 'Só o gestor pode editar notas.' }, { status: 403 });
+  const body = await request.json().catch(() => ({}));
+  const notes = (body.notes || '').trim() || null;
+  await env.DB.prepare('UPDATE employees SET notes = ? WHERE id = ?').bind(notes, empId).run();
   return json({ ok: true });
 }
 
@@ -231,6 +256,12 @@ export async function onRequest(context) {
     if (segments[0] === 'employees' && segments.length === 2 && method === 'PUT') return await handleUpdateEmployee(request, env, me, segments[1]);
     if (segments[0] === 'employees' && segments.length === 2 && method === 'DELETE') return await handleDeleteEmployee(request, env, me, segments[1]);
     if (segments[0] === 'me' && segments[1] === 'contact' && method === 'PUT') return await handleUpdateContact(request, env, me);
+    if (segments[0] === 'me' && segments[1] === 'photo' && method === 'PUT') return await handleUpdatePhoto(request, env, me.id);
+    if (segments[0] === 'employees' && segments[2] === 'photo' && method === 'PUT') {
+      if (me.role !== 'gestor') return json({ error: 'Só o gestor pode alterar a foto de outro colaborador.' }, { status: 403 });
+      return await handleUpdatePhoto(request, env, segments[1]);
+    }
+    if (segments[0] === 'employees' && segments[2] === 'notes' && method === 'PUT') return await handleUpdateNotes(request, env, me, segments[1]);
 
     return json({ error: 'Rota não encontrada.' }, { status: 404 });
   } catch (err) {
