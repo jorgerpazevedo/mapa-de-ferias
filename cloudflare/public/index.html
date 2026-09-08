@@ -267,6 +267,18 @@
   .search-input-wrap input:focus{border-color:var(--accent);}
   .status-detail{font-size:11.5px; color:var(--ink-faint); margin-top:2px;}
 
+  .breadcrumb{font-size:12.5px; color:var(--ink-faint); margin-bottom:10px;}
+  .breadcrumb button{background:none; border:none; color:var(--ink-soft); font-weight:600; cursor:pointer; padding:0; font-size:inherit; font-family:inherit;}
+  .breadcrumb button:hover{color:var(--accent-ink); text-decoration:underline;}
+  .avatar-lg{width:64px; height:64px; border-radius:50%; background:var(--surface-2); color:var(--ink-soft); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:22px; flex-shrink:0;}
+  .profile-header{display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-bottom:24px;}
+  .profile-header-info h2{margin-bottom:4px;}
+  .profile-header-actions{display:flex; gap:10px; margin-left:auto; flex-wrap:wrap;}
+  .kv-row{display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--sand); gap:12px;}
+  .kv-row:last-child{border-bottom:none;}
+  .kv-label{font-size:12.5px; color:var(--ink-faint);}
+  .kv-value{font-weight:600; font-size:13.5px; text-align:right;}
+
   .wallchart-scroll{overflow-x:auto; padding:16px 20px 20px;}
   .wallchart{min-width:max-content;}
   .wallchart-row{display:flex; align-items:stretch; border-bottom:1px solid var(--sand);}
@@ -358,6 +370,9 @@
   var TEAM_PAGE_SIZE = 8;
   var wcMonth = new Date().getMonth();
   var wcYear = new Date().getFullYear();
+  var viewingEmployeeId = null;
+  var teamListSearch = '';
+  var teamListPage = 0;
 
   function todayIso(){ return new Date().toISOString().slice(0,10); }
   function fmt(iso){ if(!iso) return '—'; var p = iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
@@ -442,6 +457,18 @@
     return html;
   }
 
+  var CONTRACT_TYPES = [
+    {value:'efetivo', label:'Efetivo (sem termo)'},
+    {value:'termo_certo', label:'Termo certo'},
+    {value:'termo_incerto', label:'Termo incerto'},
+    {value:'prestacao_servicos', label:'Prestação de serviços'},
+    {value:'estagio', label:'Estágio'}
+  ];
+  function contractTypeLabel(v){
+    var f = CONTRACT_TYPES.find(function(c){return c.value===v;});
+    return f ? f.label : 'Efetivo (sem termo)';
+  }
+
   function chipLabel(type){ return type==='ferias' ? 'Férias' : 'Baixa'; }
   function chip(type){ return type==='ferias' ? '<span class="chip chip-ferias">Férias</span>' : '<span class="chip chip-baixa">Baixa</span>'; }
   function statusChip(status){
@@ -460,6 +487,14 @@
     var future = rows.filter(function(l){return l.status==='aprovado' && l.start>today;}).sort(function(a,b){return a.start<b.start?-1:1;})[0];
     if(future) return {chip:'<span class="chip chip-aprovado">Aprovado</span>', detail: fmt(future.start)+' – '+fmt(future.end)};
     return {chip:'<span class="chip chip-neutral">Sem pedido ativo</span>', detail:'—'};
+  }
+
+  function employeeStatusBadge(e){
+    var today = todayIso();
+    if(e.contractEnd && e.contractEnd<today) return '<span class="chip chip-rejeitado">Contrato terminado</span>';
+    var onLeave = state.leaves.find(function(l){return l.employeeId===e.id && l.status==='aprovado' && l.start<=today && today<=l.end;});
+    if(onLeave) return '<span class="chip chip-pendente">Em '+(onLeave.type==='ferias'?'férias':'baixa')+'</span>';
+    return '<span class="chip chip-aprovado">Ativo</span>';
   }
 
   function teamStatusPanel(){
@@ -579,7 +614,7 @@
     document.getElementById('drawer-role').textContent = me.role==='gestor' ? 'Gestor' : 'Colaborador';
     document.getElementById('drawer-balance').textContent = vRemain+' dias restantes';
 
-    var gestorViews = {team:1, pending:1, teamcal:1, reports:1};
+    var gestorViews = {team:1, pending:1, teamcal:1, reports:1, empDetail:1};
     if(gestorViews[currentView] && me.role!=='gestor') currentView='home';
 
     renderDrawerBody(me, pendingCount);
@@ -616,6 +651,7 @@
     var me = currentUser();
     var main = document.getElementById('main');
     if(currentView==='team'){ main.innerHTML = viewTeam(); wireTeam(); return; }
+    if(currentView==='empDetail'){ main.innerHTML = viewEmployeeDetail(); wireEmployeeDetail(); return; }
     if(currentView==='mine'){ main.innerHTML = viewMine(); wirePersonal(); return; }
     if(currentView==='pending'){ main.innerHTML = viewPendingApprovals(); wirePendingApprovals(); return; }
     if(currentView==='teamcal'){ main.innerHTML = viewTeamCalendar(); wireTeamCalendar(); return; }
@@ -859,9 +895,8 @@
     if(teamNext) teamNext.addEventListener('click', function(){ teamPage++; renderMain(); });
     document.querySelectorAll('[data-view-emp]').forEach(function(btn){
       btn.addEventListener('click', function(){
-        var emp = state.employees.find(function(e){return e.id===btn.getAttribute('data-view-emp');});
-        currentView='team'; render();
-        openEmployeeModal(emp);
+        viewingEmployeeId = btn.getAttribute('data-view-emp');
+        currentView='empDetail'; render();
       });
     });
   }
@@ -923,31 +958,127 @@
     });
   }
 
-  function viewTeam(){
-    var html = '<div class="page-head"><div><h2>Colaboradores</h2><p>Gere a equipa, saldos e acessos.</p></div>'+
-      '<button class="btn btn-primary" id="add-emp">+ Novo colaborador</button></div>';
-    html += '<div class="panel"><div class="table-wrap"><table><thead><tr><th>Nome</th><th>Início</th><th>Contacto</th><th>Férias</th><th>Baixas</th><th></th></tr></thead><tbody>';
-    state.employees.forEach(function(e){
-      var b = e.balances;
-      var vRemain = e.vacationDaysTotal - b.ferias.aprovado, sRemain = e.sickDaysTotal - b.baixa.aprovado;
-      html += '<tr><td><div class="emp-name">'+esc(e.name)+'</div><div class="emp-sub">'+(e.role==='gestor'?'Gestor':'Colaborador')+' · @'+esc(e.username)+'</div></td>'+
-        '<td class="mono">'+fmt(e.startDate)+'</td>'+
-        '<td>'+esc(e.contact||'—')+'</td>'+
-        '<td class="bal">'+b.ferias.aprovado+'/'+e.vacationDaysTotal+' <span class="'+(vRemain<0?'low':'')+'">('+vRemain+' restam)</span>'+(b.ferias.pendente>0?'<div class="pending-note">+'+b.ferias.pendente+' pend.</div>':'')+'</td>'+
-        '<td class="bal">'+b.baixa.aprovado+'/'+e.sickDaysTotal+' <span class="'+(sRemain<0?'low':'')+'">('+sRemain+' restam)</span>'+(b.baixa.pendente>0?'<div class="pending-note">+'+b.baixa.pendente+' pend.</div>':'')+'</td>'+
-        '<td><div class="row-actions">'+
-          '<button class="icon-btn" title="Marcar ausência" data-mark="'+e.id+'" data-name="'+esc(e.name)+'">🗓️</button>'+
-          '<button class="icon-btn" title="Editar" data-edit="'+e.id+'">✎</button>'+
-          '<button class="icon-btn" title="Remover" data-remove="'+e.id+'">🗑</button>'+
-        '</div></td></tr>';
-    });
+  function viewEmployeeDetail(){
+    var emp = state.employees.find(function(e){return e.id===viewingEmployeeId;});
+    if(!emp){
+      return '<div class="page-head"><div><h2>Colaborador não encontrado</h2></div></div>'+
+        '<div class="panel"><div class="panel-body pad">'+emptyState('users','Este colaborador já não existe','Pode ter sido removido entretanto.')+'</div></div>';
+    }
+    var myLeaves = state.leaves.filter(function(l){return l.employeeId===emp.id;}).sort(function(a,b){return a.start<b.start?1:-1;});
+    var contractEndText = emp.contractType==='efetivo' ? 'Sem termo' : (emp.contractEnd ? fmt(emp.contractEnd) : '—');
+
+    var html = '<div class="breadcrumb"><button type="button" id="back-to-team">Colaboradores</button> › Perfil</div>';
+    html += '<div class="profile-header">'+
+      '<div class="avatar-lg">'+esc(initials(emp.name))+'</div>'+
+      '<div class="profile-header-info"><h2>'+esc(emp.name)+'</h2><p style="color:var(--ink-soft);font-size:13.5px;margin:2px 0 6px;">'+esc(emp.jobTitle||(emp.role==='gestor'?'Gestor':'Colaborador'))+'</p>'+employeeStatusBadge(emp)+'</div>'+
+      '<div class="profile-header-actions"><button class="btn btn-ghost btn-sm" id="detail-mark">🗓️ Marcar ausência</button><button class="btn btn-primary btn-sm" id="detail-edit">✎ Editar</button></div>'+
+      '</div>';
+
+    html += '<div class="profile-grid">';
+    html += '<div class="panel"><div class="panel-head"><h3>Contrato</h3></div><div class="panel-body pad">'+
+      '<div class="kv-row"><span class="kv-label">Cargo</span><span class="kv-value">'+esc(emp.jobTitle||'—')+'</span></div>'+
+      '<div class="kv-row"><span class="kv-label">Tipo de contrato</span><span class="kv-value">'+esc(contractTypeLabel(emp.contractType))+'</span></div>'+
+      '<div class="kv-row"><span class="kv-label">Data de início</span><span class="kv-value">'+fmt(emp.startDate)+'</span></div>'+
+      '<div class="kv-row"><span class="kv-label">Fim do contrato</span><span class="kv-value">'+contractEndText+'</span></div>'+
+      '<div class="kv-row"><span class="kv-label">Antiguidade</span><span class="kv-value">'+yearsOfService(emp.startDate)+' anos</span></div>'+
+      '<div class="kv-row"><span class="kv-label">Contacto</span><span class="kv-value">'+esc(emp.contact||'—')+'</span></div>'+
+      '<div class="kv-row"><span class="kv-label">Utilizador</span><span class="kv-value mono">@'+esc(emp.username)+'</span></div>'+
+      '</div></div>';
+    html += balanceCard(emp, 'Saldo '+new Date().getFullYear());
+    html += '</div>';
+
+    html += '<div class="panel"><div class="panel-head"><h3>Histórico de ausências</h3></div><div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Início</th><th>Fim</th><th>Dias</th><th>Estado</th><th></th></tr></thead><tbody>';
+    if(myLeaves.length===0){
+      html += '<tr><td colspan="6"><div class="empty">Ainda sem ausências registadas.</div></td></tr>';
+    } else {
+      myLeaves.forEach(function(l){
+        var actions = '';
+        if(l.status==='pendente') actions = '<button class="btn btn-sm btn-reject" data-reject="'+l.id+'">Rejeitar</button> <button class="btn btn-sm btn-approve" data-approve="'+l.id+'">Aprovar</button>';
+        else actions = '<button class="btn btn-ghost btn-sm" data-cancel="'+l.id+'">Cancelar</button>';
+        html += '<tr><td>'+chip(l.type)+'</td><td class="mono">'+fmt(l.start)+'</td><td class="mono">'+fmt(l.end)+'</td><td class="mono">'+l.days+'</td><td>'+statusChip(l.status)+'</td><td><div class="row-actions">'+actions+'</div></td></tr>';
+      });
+    }
     html += '</tbody></table></div></div>';
+    return html;
+  }
+
+  function wireEmployeeDetail(){
+    var emp = state.employees.find(function(e){return e.id===viewingEmployeeId;});
+    var back = document.getElementById('back-to-team');
+    if(back) back.addEventListener('click', function(){ currentView='team'; render(); });
+    if(!emp) return;
+    var markBtn = document.getElementById('detail-mark');
+    if(markBtn) markBtn.addEventListener('click', function(){ openLeaveModal(emp.id, emp.name); });
+    var editBtn = document.getElementById('detail-edit');
+    if(editBtn) editBtn.addEventListener('click', function(){ openEmployeeModal(emp); });
+    document.querySelectorAll('[data-approve]').forEach(function(b){ b.addEventListener('click', function(){ respondLeave(b.getAttribute('data-approve'), 'aprovado'); }); });
+    document.querySelectorAll('[data-reject]').forEach(function(b){ b.addEventListener('click', function(){ respondLeave(b.getAttribute('data-reject'), 'rejeitado'); }); });
+    document.querySelectorAll('[data-cancel]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        if(!confirm('Cancelar esta ausência?')) return;
+        try{ await api('leaves/'+btn.getAttribute('data-cancel'), {method:'DELETE'}); await loadState(); }
+        catch(e){ showToast(e.message); }
+      });
+    });
+  }
+
+  function viewTeam(){
+    var q = teamListSearch.trim().toLowerCase();
+    var filtered = state.employees.filter(function(e){ return !q || e.name.toLowerCase().indexOf(q)!==-1 || (e.jobTitle||'').toLowerCase().indexOf(q)!==-1; });
+    var pageSize = 8;
+    var totalPages = Math.max(1, Math.ceil(filtered.length/pageSize));
+    if(teamListPage>=totalPages) teamListPage = totalPages-1;
+    if(teamListPage<0) teamListPage = 0;
+    var pageRows = filtered.slice(teamListPage*pageSize, teamListPage*pageSize+pageSize);
+
+    var html = '<div class="page-head"><div><h2>Colaboradores</h2><p>Gere a equipa, contratos, saldos e acessos.</p></div>'+
+      '<button class="btn btn-primary" id="add-emp">+ Novo colaborador</button></div>';
+    html += '<div class="panel"><div class="panel-head"><h3>'+filtered.length+' colaborador'+(filtered.length!==1?'es':'')+'</h3>'+
+      '<div class="search-input-wrap">'+icon('search')+'<input type="text" id="team-list-search" placeholder="Pesquisar por nome ou cargo…" value="'+esc(teamListSearch)+'"></div>'+
+      '</div><div class="table-wrap"><table><thead><tr><th>Colaborador</th><th>Início</th><th>Estado</th><th>Férias</th><th>Baixas</th><th></th></tr></thead><tbody>';
+    if(pageRows.length===0){
+      html += '<tr><td colspan="6"><div class="empty">Nenhum colaborador encontrado.</div></td></tr>';
+    } else {
+      pageRows.forEach(function(e){
+        var b = e.balances;
+        var vRemain = e.vacationDaysTotal - b.ferias.aprovado, sRemain = e.sickDaysTotal - b.baixa.aprovado;
+        html += '<tr><td><div class="list-item-main"><div class="avatar">'+esc(initials(e.name))+'</div><div><div class="li-name">'+esc(e.name)+'</div><div class="li-sub">'+esc(e.jobTitle||(e.role==='gestor'?'Gestor':'Colaborador'))+'</div></div></div></td>'+
+          '<td class="mono">'+fmt(e.startDate)+'</td>'+
+          '<td>'+employeeStatusBadge(e)+'</td>'+
+          '<td class="bal">'+b.ferias.aprovado+'/'+e.vacationDaysTotal+' <span class="'+(vRemain<0?'low':'')+'">('+vRemain+' restam)</span>'+(b.ferias.pendente>0?'<div class="pending-note">+'+b.ferias.pendente+' pend.</div>':'')+'</td>'+
+          '<td class="bal">'+b.baixa.aprovado+'/'+e.sickDaysTotal+' <span class="'+(sRemain<0?'low':'')+'">('+sRemain+' restam)</span>'+(b.baixa.pendente>0?'<div class="pending-note">+'+b.baixa.pendente+' pend.</div>':'')+'</td>'+
+          '<td><div class="row-actions">'+
+            '<button class="icon-btn" title="Ver perfil" data-view-emp="'+e.id+'">👁</button>'+
+            '<button class="icon-btn" title="Marcar ausência" data-mark="'+e.id+'" data-name="'+esc(e.name)+'">🗓️</button>'+
+            '<button class="icon-btn" title="Editar" data-edit="'+e.id+'">✎</button>'+
+            '<button class="icon-btn" title="Remover" data-remove="'+e.id+'">🗑</button>'+
+          '</div></td></tr>';
+      });
+    }
+    html += '</tbody></table></div>';
+    html += '<div class="table-foot"><span>'+(filtered.length===0?0:teamListPage*pageSize+1)+'–'+Math.min(filtered.length, teamListPage*pageSize+pageSize)+' de '+filtered.length+' colaboradores</span>'+
+      '<div class="pager"><button class="icon-btn" id="team-list-prev" '+(teamListPage<=0?'disabled':'')+'>‹</button><span>'+(teamListPage+1)+' / '+totalPages+'</span><button class="icon-btn" id="team-list-next" '+(teamListPage>=totalPages-1?'disabled':'')+'>›</button></div></div>';
+    html += '</div>';
     return html;
   }
 
   function wireTeam(){
     var add = document.getElementById('add-emp');
     if(add) add.addEventListener('click', function(){ openEmployeeModal(null); });
+    var searchInput = document.getElementById('team-list-search');
+    if(searchInput){
+      searchInput.addEventListener('input', function(){
+        teamListSearch = searchInput.value; teamListPage = 0; renderMain();
+        var el = document.getElementById('team-list-search');
+        if(el){ el.focus(); var v=el.value; el.value=''; el.value=v; }
+      });
+    }
+    var prevBtn = document.getElementById('team-list-prev'), nextBtn = document.getElementById('team-list-next');
+    if(prevBtn) prevBtn.addEventListener('click', function(){ teamListPage--; renderMain(); });
+    if(nextBtn) nextBtn.addEventListener('click', function(){ teamListPage++; renderMain(); });
+    document.querySelectorAll('[data-view-emp]').forEach(function(btn){
+      btn.addEventListener('click', function(){ viewingEmployeeId = btn.getAttribute('data-view-emp'); currentView='empDetail'; render(); });
+    });
     document.querySelectorAll('[data-mark]').forEach(function(btn){
       btn.addEventListener('click', function(){ openLeaveModal(btn.getAttribute('data-mark'), btn.getAttribute('data-name')); });
     });
@@ -996,14 +1127,22 @@
 
   function openEmployeeModal(emp){
     var isNew = !emp;
-    var e = emp || { id:null, name:'', startDate: todayIso(), contact:'', username:'', role:'colaborador', vacationDaysTotal:22, sickDaysTotal:3 };
+    var e = emp || { id:null, name:'', startDate: todayIso(), contact:'', username:'', role:'colaborador', vacationDaysTotal:22, sickDaysTotal:3, jobTitle:'', contractType:'efetivo', contractEnd:'' };
+    var contractOptions = CONTRACT_TYPES.map(function(c){ return '<option value="'+c.value+'"'+(e.contractType===c.value?' selected':'')+'>'+c.label+'</option>'; }).join('');
     var m = openModal(
-      '<h3>'+(isNew?'Novo colaborador':'Editar colaborador')+'</h3><p class="modal-sub">Preenche os dados e o acesso de login.</p>'+
+      '<h3>'+(isNew?'Novo colaborador':'Editar colaborador')+'</h3><p class="modal-sub">Preenche os dados, o contrato e o acesso de login.</p>'+
       '<div class="form-error" id="emp-err"></div>'+
-      '<div class="field"><label>Nome</label><input id="f-name" value="'+esc(e.name)+'"></div>'+
+      '<div class="field-row">'+
+        '<div class="field"><label>Nome</label><input id="f-name" value="'+esc(e.name)+'"></div>'+
+        '<div class="field"><label>Cargo / Designação</label><input id="f-job" placeholder="ex: Designer de UX" value="'+esc(e.jobTitle||'')+'"></div>'+
+      '</div>'+
       '<div class="field-row">'+
         '<div class="field"><label>Data de início</label><input id="f-start" type="date" value="'+e.startDate+'"></div>'+
         '<div class="field"><label>Função</label><select id="f-role"><option value="colaborador"'+(e.role==='colaborador'?' selected':'')+'>Colaborador</option><option value="gestor"'+(e.role==='gestor'?' selected':'')+'>Gestor</option></select></div>'+
+      '</div>'+
+      '<div class="field-row">'+
+        '<div class="field"><label>Tipo de contrato</label><select id="f-contract-type">'+contractOptions+'</select></div>'+
+        '<div class="field" id="f-contract-end-wrap"><label>Fim do contrato</label><input id="f-contract-end" type="date" value="'+(e.contractEnd||'')+'"></div>'+
       '</div>'+
       '<div class="field"><label>Contacto (email ou telefone)</label><input id="f-contact" value="'+esc(e.contact)+'"></div>'+
       '<div class="field-row">'+
@@ -1017,6 +1156,12 @@
       '<div class="form-note">As passwords ficam encriptadas no servidor — nunca são devolvidas ao browser.</div>'+
       '<div class="modal-actions"><button class="btn btn-ghost" id="e-cancel">Cancelar</button><button class="btn btn-primary" id="e-save">Guardar</button></div>'
     );
+    function syncContractEndVisibility(){
+      var wrap = document.getElementById('f-contract-end-wrap');
+      wrap.style.display = document.getElementById('f-contract-type').value==='efetivo' ? 'none' : '';
+    }
+    m.querySelector('#f-contract-type').addEventListener('change', syncContractEndVisibility);
+    syncContractEndVisibility();
     m.querySelector('#e-cancel').addEventListener('click', closeModal);
     m.querySelector('#e-save').addEventListener('click', async function(){
       var name = document.getElementById('f-name').value.trim();
@@ -1033,6 +1178,9 @@
         contact: document.getElementById('f-contact').value.trim(),
         vacationDaysTotal: parseInt(document.getElementById('f-vac').value,10) || 0,
         sickDaysTotal: parseInt(document.getElementById('f-sick').value,10) || 0,
+        jobTitle: document.getElementById('f-job').value.trim(),
+        contractType: document.getElementById('f-contract-type').value,
+        contractEnd: document.getElementById('f-contract-type').value==='efetivo' ? null : (document.getElementById('f-contract-end').value || null),
       };
       if(password) payload.password = password;
       try{

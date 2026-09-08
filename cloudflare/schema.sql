@@ -9,6 +9,9 @@ CREATE TABLE IF NOT EXISTS employees (
   role TEXT NOT NULL CHECK(role IN ('gestor','colaborador')),
   vacation_days_total INTEGER NOT NULL DEFAULT 22,
   sick_days_total INTEGER NOT NULL DEFAULT 3,
+  job_title TEXT,
+  contract_type TEXT NOT NULL DEFAULT 'efetivo',
+  contract_end TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

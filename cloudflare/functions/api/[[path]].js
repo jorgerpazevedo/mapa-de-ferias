@@ -8,6 +8,11 @@ function thisYear() {
   return new Date().getFullYear();
 }
 
+const CONTRACT_TYPES = ['efetivo', 'termo_certo', 'termo_incerto', 'prestacao_servicos', 'estagio'];
+function normalizeContractType(v) {
+  return CONTRACT_TYPES.includes(v) ? v : 'efetivo';
+}
+
 async function computeBalances(db, employeeId) {
   const year = thisYear();
   const rows = await db.prepare(
@@ -145,13 +150,16 @@ async function handleCreateEmployee(request, env, me) {
   const hash = await hashPassword(password, salt);
   const id = uid('e');
   await env.DB.prepare(
-    `INSERT INTO employees (id, name, start_date, contact, username, password_hash, password_salt, role, vacation_days_total, sick_days_total)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO employees (id, name, start_date, contact, username, password_hash, password_salt, role, vacation_days_total, sick_days_total, job_title, contract_type, contract_end)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
     id, name, body.startDate || new Date().toISOString().slice(0, 10), body.contact || '', username, hash, salt,
     body.role === 'gestor' ? 'gestor' : 'colaborador',
     Math.max(0, parseInt(body.vacationDaysTotal, 10) || 22),
-    Math.max(0, parseInt(body.sickDaysTotal, 10) || 3)
+    Math.max(0, parseInt(body.sickDaysTotal, 10) || 3),
+    (body.jobTitle || '').trim() || null,
+    normalizeContractType(body.contractType),
+    body.contractEnd || null
   ).run();
   return json({ ok: true, id });
 }
@@ -175,12 +183,15 @@ async function handleUpdateEmployee(request, env, me, empId) {
   }
 
   await env.DB.prepare(
-    `UPDATE employees SET name=?, start_date=?, contact=?, username=?, password_hash=?, password_salt=?, role=?, vacation_days_total=?, sick_days_total=? WHERE id=?`
+    `UPDATE employees SET name=?, start_date=?, contact=?, username=?, password_hash=?, password_salt=?, role=?, vacation_days_total=?, sick_days_total=?, job_title=?, contract_type=?, contract_end=? WHERE id=?`
   ).bind(
     name, body.startDate || target.start_date, body.contact || '', username, passwordHash, passwordSalt,
     body.role === 'gestor' ? 'gestor' : 'colaborador',
     Math.max(0, parseInt(body.vacationDaysTotal, 10) || 0),
     Math.max(0, parseInt(body.sickDaysTotal, 10) || 0),
+    (body.jobTitle || '').trim() || null,
+    normalizeContractType(body.contractType),
+    body.contractEnd || null,
     empId
   ).run();
   return json({ ok: true });

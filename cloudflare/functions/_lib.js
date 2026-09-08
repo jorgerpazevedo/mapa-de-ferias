@@ -90,6 +90,9 @@ export function publicEmployee(e) {
     role: e.role,
     vacationDaysTotal: e.vacation_days_total,
     sickDaysTotal: e.sick_days_total,
+    jobTitle: e.job_title,
+    contractType: e.contract_type || 'efetivo',
+    contractEnd: e.contract_end,
   };
 }
 
