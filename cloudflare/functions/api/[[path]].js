@@ -1,6 +1,6 @@
 import {
   json, parseCookies, sessionCookie, clearSessionCookie, createSession, currentEmployee,
-  hashPassword, verifyPassword, randomHex, publicEmployee, publicLeave,
+  hashPassword, verifyPassword, randomHex, publicEmployee, publicLeave, publicActivity,
   businessDays, calendarDays, rangesOverlap, uid,
 } from '../_lib.js';
 
@@ -60,14 +60,16 @@ async function handleState(request, env, me) {
         ...publicEmployee(e),
         balances: await computeBalances(env.DB, e.id),
       }))),
-      leaves: leaveRows.results.map((l) => publicLeave(l, nameById[l.employee_id])),
+      leaves: leaveRows.results.map((l) => publicLeave(l, nameById[l.employee_id], l.responded_by ? nameById[l.responded_by] : null)),
     });
   }
-  const leaveRows = await env.DB.prepare('SELECT * FROM leaves WHERE employee_id = ? ORDER BY start_date').bind(me.id).all();
+  const leaveRows = await env.DB.prepare(
+    `SELECT l.*, r.name AS responder_name FROM leaves l LEFT JOIN employees r ON r.id = l.responded_by WHERE l.employee_id = ? ORDER BY l.start_date`
+  ).bind(me.id).all();
   return json({
     role: 'colaborador',
     me: { ...publicEmployee(me), balances: await computeBalances(env.DB, me.id) },
-    leaves: leaveRows.results.map((l) => publicLeave(l, me.name)),
+    leaves: leaveRows.results.map((l) => publicLeave(l, me.name, l.responder_name)),
   });
 }
 
@@ -116,11 +118,15 @@ async function handleCreateLeave(request, env, me) {
 async function handleRespondLeave(request, env, me, leaveId) {
   if (me.role !== 'gestor') return json({ error: 'Só o gestor pode aprovar ou rejeitar pedidos.' }, { status: 403 });
   const body = await request.json().catch(() => ({}));
-  const status = body.status === 'rejeitado' ? 'rejeitado' : 'aprovado';
+  const status = ['pendente', 'aprovado', 'rejeitado'].includes(body.status) ? body.status : 'aprovado';
   const lv = await env.DB.prepare('SELECT * FROM leaves WHERE id = ?').bind(leaveId).first();
   if (!lv) return json({ error: 'Pedido não encontrado.' }, { status: 404 });
-  await env.DB.prepare('UPDATE leaves SET status = ?, responded_by = ?, responded_at = ? WHERE id = ?')
-    .bind(status, me.id, new Date().toISOString(), leaveId).run();
+  if (status === 'pendente') {
+    await env.DB.prepare('UPDATE leaves SET status = ?, responded_by = NULL, responded_at = NULL WHERE id = ?').bind(status, leaveId).run();
+  } else {
+    await env.DB.prepare('UPDATE leaves SET status = ?, responded_by = ?, responded_at = ? WHERE id = ?')
+      .bind(status, me.id, new Date().toISOString(), leaveId).run();
+  }
   return json({ ok: true });
 }
 
@@ -150,8 +156,8 @@ async function handleCreateEmployee(request, env, me) {
   const hash = await hashPassword(password, salt);
   const id = uid('e');
   await env.DB.prepare(
-    `INSERT INTO employees (id, name, start_date, username, password_hash, password_salt, role, vacation_days_total, sick_days_total, job_title, contract_type, contract_end, email, phone)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO employees (id, name, start_date, username, password_hash, password_salt, role, vacation_days_total, sick_days_total, job_title, contract_type, contract_end, email, phone, tags)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(
     id, name, body.startDate || new Date().toISOString().slice(0, 10), username, hash, salt,
     body.role === 'gestor' ? 'gestor' : 'colaborador',
@@ -161,9 +167,21 @@ async function handleCreateEmployee(request, env, me) {
     normalizeContractType(body.contractType),
     body.contractEnd || null,
     (body.email || '').trim() || null,
-    (body.phone || '').trim() || null
+    (body.phone || '').trim() || null,
+    JSON.stringify(normalizeTags(body.tags))
   ).run();
   return json({ ok: true, id });
+}
+
+function normalizeTags(tags) {
+  if (!Array.isArray(tags)) return [];
+  const seen = new Set();
+  const out = [];
+  for (const t of tags) {
+    const v = String(t || '').trim();
+    if (v && !seen.has(v.toLowerCase())) { seen.add(v.toLowerCase()); out.push(v); }
+  }
+  return out.slice(0, 20);
 }
 
 async function handleUpdateEmployee(request, env, me, empId) {
@@ -185,7 +203,7 @@ async function handleUpdateEmployee(request, env, me, empId) {
   }
 
   await env.DB.prepare(
-    `UPDATE employees SET name=?, start_date=?, username=?, password_hash=?, password_salt=?, role=?, vacation_days_total=?, sick_days_total=?, job_title=?, contract_type=?, contract_end=?, email=?, phone=? WHERE id=?`
+    `UPDATE employees SET name=?, start_date=?, username=?, password_hash=?, password_salt=?, role=?, vacation_days_total=?, sick_days_total=?, job_title=?, contract_type=?, contract_end=?, email=?, phone=?, tags=? WHERE id=?`
   ).bind(
     name, body.startDate || target.start_date, username, passwordHash, passwordSalt,
     body.role === 'gestor' ? 'gestor' : 'colaborador',
@@ -196,6 +214,7 @@ async function handleUpdateEmployee(request, env, me, empId) {
     body.contractEnd || null,
     (body.email || '').trim() || null,
     (body.phone || '').trim() || null,
+    JSON.stringify(normalizeTags(body.tags)),
     empId
   ).run();
   return json({ ok: true });
@@ -225,6 +244,48 @@ async function handleUpdatePhoto(request, env, id) {
     return json({ error: 'Imagem inválida ou demasiado grande.' }, { status: 400 });
   }
   await env.DB.prepare('UPDATE employees SET photo = ? WHERE id = ?').bind(photo, id).run();
+  return json({ ok: true });
+}
+
+const ACTIVITY_TYPES = ['chamada', 'reuniao', 'email', 'evento', 'nota', 'outro'];
+const ACTIVITY_STATUSES = ['concluido', 'agendado', 'pendente'];
+const ACTIVITY_IMPACTS = ['positivo', 'neutro', 'atencao'];
+
+async function handleListActivities(request, env, me, empId) {
+  if (me.role !== 'gestor') return json({ error: 'Só o gestor pode ver o histórico de interações.' }, { status: 403 });
+  const emp = await env.DB.prepare('SELECT name FROM employees WHERE id = ?').bind(empId).first();
+  if (!emp) return json({ error: 'Colaborador não encontrado.' }, { status: 404 });
+  const rows = await env.DB.prepare('SELECT * FROM activities WHERE employee_id = ? ORDER BY created_at DESC').bind(empId).all();
+  return json({ activities: rows.results.map((a) => publicActivity(a, emp.name)) });
+}
+
+async function handleCreateActivity(request, env, me, empId) {
+  if (me.role !== 'gestor') return json({ error: 'Só o gestor pode registar interações.' }, { status: 403 });
+  const emp = await env.DB.prepare('SELECT name FROM employees WHERE id = ?').bind(empId).first();
+  if (!emp) return json({ error: 'Colaborador não encontrado.' }, { status: 404 });
+  const body = await request.json().catch(() => ({}));
+  const details = (body.details || '').trim();
+  if (!details) return json({ error: 'Descreve o que aconteceu.' }, { status: 400 });
+  const id = uid('a');
+  const row = {
+    id,
+    employee_id: empId,
+    type: ACTIVITY_TYPES.includes(body.type) ? body.type : 'nota',
+    details,
+    status: ACTIVITY_STATUSES.includes(body.status) ? body.status : 'concluido',
+    impact: ACTIVITY_IMPACTS.includes(body.impact) ? body.impact : null,
+    created_by: me.id,
+    created_at: new Date().toISOString(),
+  };
+  await env.DB.prepare(
+    `INSERT INTO activities (id, employee_id, type, details, status, impact, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(row.id, row.employee_id, row.type, row.details, row.status, row.impact, row.created_by, row.created_at).run();
+  return json({ ok: true, activity: publicActivity(row, emp.name) });
+}
+
+async function handleDeleteActivity(request, env, me, activityId) {
+  if (me.role !== 'gestor') return json({ error: 'Só o gestor pode remover interações.' }, { status: 403 });
+  await env.DB.prepare('DELETE FROM activities WHERE id = ?').bind(activityId).run();
   return json({ ok: true });
 }
 
@@ -262,6 +323,9 @@ export async function onRequest(context) {
       return await handleUpdatePhoto(request, env, segments[1]);
     }
     if (segments[0] === 'employees' && segments[2] === 'notes' && method === 'PUT') return await handleUpdateNotes(request, env, me, segments[1]);
+    if (segments[0] === 'employees' && segments[2] === 'activities' && segments.length === 3 && method === 'GET') return await handleListActivities(request, env, me, segments[1]);
+    if (segments[0] === 'employees' && segments[2] === 'activities' && segments.length === 3 && method === 'POST') return await handleCreateActivity(request, env, me, segments[1]);
+    if (segments[0] === 'activities' && segments.length === 2 && method === 'DELETE') return await handleDeleteActivity(request, env, me, segments[1]);
 
     return json({ error: 'Rota não encontrada.' }, { status: 404 });
   } catch (err) {

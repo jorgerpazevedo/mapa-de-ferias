@@ -280,6 +280,34 @@
   .comm-link svg{width:18px; height:18px; flex-shrink:0; color:var(--ink-soft);}
   .comm-link-label{font-size:11px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.03em;}
   .comm-link-value{font-weight:600; font-size:13.5px;}
+
+  .tag-chip{display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:999px; font-size:11.5px; font-weight:600; background:var(--surface-2); color:var(--ink-soft); border:1px solid var(--sand);}
+  .tag-chip svg{width:10px; height:10px;}
+  .tag-chip.active{background:var(--accent-bg); color:var(--accent-ink); border-color:var(--accent-bg);}
+  .tag-row{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
+  .tag-filter-row{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px;}
+  .tag-filter-row button{background:none; border:none; padding:0; cursor:pointer;}
+
+  .activity-item{display:flex; gap:12px; padding:14px 0; border-bottom:1px solid var(--sand);}
+  .activity-item:last-child{border-bottom:none;}
+  .activity-icon{width:34px; height:34px; border-radius:10px; background:var(--surface-2); color:var(--ink-soft); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .activity-icon svg{width:16px; height:16px;}
+  .activity-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap;}
+  .activity-type{font-weight:600; font-size:13.5px;}
+  .activity-meta{font-size:11.5px; color:var(--ink-faint);}
+  .activity-details{font-size:13.5px; color:var(--ink); margin-top:3px; white-space:pre-wrap;}
+  .activity-badges{display:flex; gap:6px; margin-top:6px;}
+  .activity-remove{margin-left:auto; background:none; border:none; color:var(--ink-faint); cursor:pointer; font-size:12px; flex-shrink:0;}
+  .activity-remove:hover{color:var(--rose);}
+
+  .kanban-board{display:grid; grid-template-columns:repeat(3,minmax(240px,1fr)); gap:16px; align-items:start; overflow-x:auto;}
+  .kanban-col{background:var(--surface); border:1px solid var(--sand); border-radius:var(--radius); box-shadow:var(--shadow); min-width:240px;}
+  .kanban-col-head{display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--sand);}
+  .kanban-col-head h3{font-size:14px;}
+  .kanban-count{background:var(--surface-2); color:var(--ink-soft); font-family:var(--font-mono); font-size:11.5px; padding:2px 8px; border-radius:999px;}
+  .kanban-cards{padding:12px; display:flex; flex-direction:column; gap:10px; min-height:60px;}
+  .kanban-card{background:var(--paper); border:1px solid var(--sand); border-radius:10px; padding:12px;}
+  .kanban-card-actions{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;}
   .profile-header{display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-bottom:24px;}
   .profile-header-info h2{margin-bottom:4px;}
   .profile-header-actions{display:flex; gap:10px; margin-left:auto; flex-wrap:wrap;}
@@ -382,6 +410,8 @@
   var viewingEmployeeId = null;
   var teamListSearch = '';
   var teamListPage = 0;
+  var teamListTagFilter = '';
+  var employeeActivitiesCache = {};
 
   function todayIso(){ return new Date().toISOString().slice(0,10); }
   function fmt(iso){ if(!iso) return '—'; var p = iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; }
@@ -517,6 +547,22 @@
     return f ? f.label : 'Efetivo (sem termo)';
   }
 
+  var ACTIVITY_TYPE_LABELS = {chamada:'Chamada', reuniao:'Reunião', email:'Email', evento:'Evento', nota:'Nota', outro:'Outro'};
+  var ACTIVITY_ICONS = {chamada:'phoneCall', reuniao:'users2', email:'mail', evento:'calendar', nota:'paperclip', outro:'help'};
+  var ACTIVITY_STATUS_LABELS = {concluido:'Concluído', agendado:'Agendado', pendente:'Pendente'};
+  var ACTIVITY_IMPACT_LABELS = {positivo:'Positivo', neutro:'Neutro', atencao:'Precisa de atenção'};
+  function statusPill(text){ return '<span class="chip chip-neutral">'+esc(text)+'</span>'; }
+  function impactPill(impact){
+    var cls = impact==='positivo' ? 'chip-aprovado' : impact==='atencao' ? 'chip-rejeitado' : 'chip-neutral';
+    return '<span class="chip '+cls+'">'+esc(ACTIVITY_IMPACT_LABELS[impact]||impact)+'</span>';
+  }
+  function fmtDateTime(iso){
+    if(!iso) return '—';
+    var d = new Date(iso);
+    var pad = function(n){ return (n<10?'0':'')+n; };
+    return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()+' '+pad(d.getHours())+':'+pad(d.getMinutes());
+  }
+
   function chipLabel(type){ return type==='ferias' ? 'Férias' : 'Baixa'; }
   function chip(type){ return type==='ferias' ? '<span class="chip chip-ferias">Férias</span>' : '<span class="chip chip-baixa">Baixa</span>'; }
   function statusChip(status){
@@ -535,6 +581,11 @@
     var future = rows.filter(function(l){return l.status==='aprovado' && l.start>today;}).sort(function(a,b){return a.start<b.start?-1:1;})[0];
     if(future) return {chip:'<span class="chip chip-aprovado">Aprovado</span>', detail: fmt(future.start)+' – '+fmt(future.end)};
     return {chip:'<span class="chip chip-neutral">Sem pedido ativo</span>', detail:'—'};
+  }
+
+  function tagRow(tags){
+    if(!tags || !tags.length) return '';
+    return '<div class="tag-row">'+tags.map(function(t){ return '<span class="tag-chip">'+icon('tag')+' '+esc(t)+'</span>'; }).join('')+'</div>';
   }
 
   function employeeStatusBadge(e){
@@ -619,7 +670,11 @@
     search: '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/>',
     mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
     whatsapp: '<path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-4.1-1.1L3 20l1.2-5.2A8.5 8.5 0 1 1 21 11.5z"/><path d="M8.5 9.5c.3 2.5 2.5 4.7 5 5"/>',
-    camera: '<path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.3"/>'
+    camera: '<path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.3"/>',
+    kanban: '<rect x="3" y="4" width="18" height="17" rx="2"/><line x1="9" y1="4" x2="9" y2="21"/><line x1="15" y1="4" x2="15" y2="21"/>',
+    phoneCall: '<path d="M4 5c0-1 1-2 2-2h2l2 5-2 1.5a11 11 0 0 0 5 5L14.5 12l5 2v2c0 1-1 2-2 2C10.5 18 4 11.5 4 5z"/>',
+    users2: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="9" r="2.6"/><path d="M15.7 20a4.3 4.3 0 0 1 5.3-4.2"/>',
+    tag: '<path d="M3 11.5V5a1 1 0 0 1 1-1h6.5a1 1 0 0 1 .7.3l9 9a1 1 0 0 1 0 1.4l-7.5 7.5a1 1 0 0 1-1.4 0l-9-9a1 1 0 0 1-.3-.7z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor" stroke="none"/>'
   };
   function icon(name){
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(ICON_PATHS[name]||'')+'</svg>';
@@ -636,6 +691,7 @@
     { section:'Gestão & RH', rh:true, gestorOnly:true, items:[
       {key:'teamcal', label:'Calendário da Equipa', icon:'calendar'},
       {key:'pending', label:'Aprovações Pendentes', icon:'checkCircle', badge:true},
+      {key:'pipeline', label:'Pipeline de Pedidos', icon:'kanban'},
       {key:'reports', label:'Relatórios & Estatísticas', icon:'barChart'},
       {key:'team', label:'Gestão de Colaboradores', icon:'users'}
     ]},
@@ -669,7 +725,7 @@
     document.getElementById('drawer-role').textContent = me.role==='gestor' ? 'Gestor' : 'Colaborador';
     document.getElementById('drawer-balance').textContent = vRemain+' dias restantes';
 
-    var gestorViews = {team:1, pending:1, teamcal:1, reports:1, empDetail:1};
+    var gestorViews = {team:1, pending:1, teamcal:1, reports:1, empDetail:1, pipeline:1};
     if(gestorViews[currentView] && me.role!=='gestor') currentView='home';
 
     renderDrawerBody(me, pendingCount);
@@ -710,6 +766,7 @@
     if(currentView==='mine'){ main.innerHTML = viewMine(); wirePersonal(); return; }
     if(currentView==='pending'){ main.innerHTML = viewPendingApprovals(); wirePendingApprovals(); return; }
     if(currentView==='teamcal'){ main.innerHTML = viewTeamCalendar(); wireTeamCalendar(); return; }
+    if(currentView==='pipeline'){ main.innerHTML = viewPipeline(); wirePipeline(); return; }
     if(currentView==='reports'){ main.innerHTML = viewReports(); wireReports(); return; }
     if(currentView==='settings'){ main.innerHTML = viewSettings(); return; }
     if(currentView==='help'){ main.innerHTML = viewHelp(); return; }
@@ -735,6 +792,43 @@
   function wirePendingApprovals(){
     document.querySelectorAll('[data-approve]').forEach(function(b){ b.addEventListener('click', function(){ respondLeave(b.getAttribute('data-approve'), 'aprovado'); }); });
     document.querySelectorAll('[data-reject]').forEach(function(b){ b.addEventListener('click', function(){ respondLeave(b.getAttribute('data-reject'), 'rejeitado'); }); });
+  }
+
+  function kanbanCard(l){
+    var actions = '';
+    if(l.status==='pendente'){
+      actions = '<button class="btn btn-sm btn-reject" data-pipe="'+l.id+'" data-to="rejeitado">Rejeitar</button><button class="btn btn-sm btn-approve" data-pipe="'+l.id+'" data-to="aprovado">Aprovar</button>';
+    } else if(l.status==='aprovado'){
+      actions = '<button class="btn btn-ghost btn-sm" data-pipe="'+l.id+'" data-to="pendente">‹ Reverter</button><button class="btn btn-sm btn-reject" data-pipe="'+l.id+'" data-to="rejeitado">Rejeitar</button>';
+    } else {
+      actions = '<button class="btn btn-ghost btn-sm" data-pipe="'+l.id+'" data-to="pendente">‹ Reverter</button><button class="btn btn-sm btn-approve" data-pipe="'+l.id+'" data-to="aprovado">Aprovar</button>';
+    }
+    return '<div class="kanban-card"><div class="list-item-main">'+avatarHtml(employeeById(l.employeeId)||{name:l.employeeName})+'<div><div class="li-name">'+esc(l.employeeName)+'</div><div class="li-sub">'+chipLabel(l.type)+' · '+fmt(l.start)+' – '+fmt(l.end)+'</div></div></div>'+
+      (l.respondedByName ? '<div class="status-detail" style="margin-top:8px;">por '+esc(l.respondedByName)+'</div>' : '')+
+      '<div class="kanban-card-actions">'+actions+'</div></div>';
+  }
+  function viewPipeline(){
+    var cols = [
+      {status:'pendente', title:'Pendente'},
+      {status:'aprovado', title:'Aprovado'},
+      {status:'rejeitado', title:'Rejeitado'}
+    ];
+    var html = '<div class="page-head"><div><h2>Pipeline de Pedidos</h2><p>Acompanha os pedidos de férias e baixa por fase.</p></div></div>';
+    html += '<div class="kanban-board">';
+    cols.forEach(function(col){
+      var items = state.leaves.filter(function(l){return l.status===col.status;}).sort(function(a,b){return a.start<b.start?-1:1;});
+      html += '<div class="kanban-col"><div class="kanban-col-head"><h3>'+col.title+'</h3><span class="kanban-count">'+items.length+'</span></div><div class="kanban-cards">';
+      if(items.length===0) html += '<div class="empty">Sem pedidos.</div>';
+      else items.forEach(function(l){ html += kanbanCard(l); });
+      html += '</div></div>';
+    });
+    html += '</div>';
+    return html;
+  }
+  function wirePipeline(){
+    document.querySelectorAll('[data-pipe]').forEach(function(btn){
+      btn.addEventListener('click', function(){ respondLeave(btn.getAttribute('data-pipe'), btn.getAttribute('data-to')); });
+    });
   }
 
   function dayOfMonth(iso){ return parseInt(iso.slice(8,10),10); }
@@ -949,11 +1043,22 @@
     if(teamPrev) teamPrev.addEventListener('click', function(){ teamPage--; renderMain(); });
     if(teamNext) teamNext.addEventListener('click', function(){ teamPage++; renderMain(); });
     document.querySelectorAll('[data-view-emp]').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        viewingEmployeeId = btn.getAttribute('data-view-emp');
-        currentView='empDetail'; render();
-      });
+      btn.addEventListener('click', function(){ openEmployeeDetail(btn.getAttribute('data-view-emp')); });
     });
+  }
+
+  function openEmployeeDetail(id){
+    viewingEmployeeId = id;
+    currentView = 'empDetail';
+    render();
+    loadEmployeeActivities(id);
+  }
+  async function loadEmployeeActivities(empId){
+    try{
+      var res = await api('employees/'+empId+'/activities');
+      employeeActivitiesCache[empId] = res.activities;
+      if(viewingEmployeeId===empId && currentView==='empDetail') renderMain();
+    }catch(e){ /* silently ignore, panel just stays empty */ }
   }
 
   function refocusTeamSearch(){
@@ -964,7 +1069,7 @@
   async function respondLeave(id, status){
     try{
       await api('leaves/'+id+'/respond', {method:'POST', body: JSON.stringify({status:status})});
-      showToast(status==='aprovado' ? 'Pedido aprovado.' : 'Pedido rejeitado.');
+      showToast(status==='aprovado' ? 'Pedido aprovado.' : status==='rejeitado' ? 'Pedido rejeitado.' : 'Pedido reposto como pendente.');
       await loadState();
     }catch(e){ showToast(e.message); }
   }
@@ -1038,7 +1143,7 @@
     var html = '<div class="breadcrumb"><button type="button" id="back-to-team">Colaboradores</button> › Perfil</div>';
     html += '<div class="profile-header">'+
       '<div class="avatar-upload-wrap">'+avatarHtml(emp,'avatar-lg')+'<button type="button" class="avatar-upload-btn" id="detail-photo-btn" title="Alterar foto">'+icon('camera')+'</button><input type="file" accept="image/*" id="detail-photo-input" class="hidden"></div>'+
-      '<div class="profile-header-info"><h2>'+esc(emp.name)+'</h2><p style="color:var(--ink-soft);font-size:13.5px;margin:2px 0 6px;">'+esc(emp.jobTitle||(emp.role==='gestor'?'Gestor':'Colaborador'))+'</p>'+employeeStatusBadge(emp)+'</div>'+
+      '<div class="profile-header-info"><h2>'+esc(emp.name)+'</h2><p style="color:var(--ink-soft);font-size:13.5px;margin:2px 0 6px;">'+esc(emp.jobTitle||(emp.role==='gestor'?'Gestor':'Colaborador'))+'</p>'+employeeStatusBadge(emp)+tagRow(emp.tags)+'</div>'+
       '<div class="profile-header-actions"><button class="btn btn-ghost btn-sm" id="detail-mark">🗓️ Marcar ausência</button><button class="btn btn-primary btn-sm" id="detail-edit">✎ Editar</button></div>'+
       '</div>';
 
@@ -1069,6 +1174,23 @@
       '<div class="form-note">Visível apenas para gestores.</div>'+
       '</div></div>';
     html += '</div>';
+
+    var activities = employeeActivitiesCache[emp.id];
+    html += '<div class="panel"><div class="panel-head"><h3>Atividades</h3><button class="btn btn-primary btn-sm" id="detail-activity-add">+ Registar interação</button></div><div class="panel-body pad">';
+    if(activities===undefined){
+      html += '<div class="empty">A carregar...</div>';
+    } else if(activities.length===0){
+      html += emptyState('phoneCall','Sem interações registadas','Regista chamadas, reuniões, emails ou notas sobre este colaborador.');
+    } else {
+      activities.forEach(function(a){
+        html += '<div class="activity-item"><div class="activity-icon">'+icon(ACTIVITY_ICONS[a.type]||'phoneCall')+'</div><div style="flex:1;min-width:0;">'+
+          '<div class="activity-head"><span class="activity-type">'+esc(ACTIVITY_TYPE_LABELS[a.type]||a.type)+'</span><span class="activity-meta">'+fmtDateTime(a.createdAt)+'</span></div>'+
+          '<div class="activity-details">'+esc(a.details)+'</div>'+
+          '<div class="activity-badges">'+statusPill(ACTIVITY_STATUS_LABELS[a.status]||a.status)+(a.impact?impactPill(a.impact):'')+'</div>'+
+          '</div><button class="activity-remove" data-activity-remove="'+a.id+'" title="Remover">x</button></div>';
+      });
+    }
+    html += '</div></div>';
 
     html += '<div class="panel"><div class="panel-head"><h3>Histórico de ausências</h3></div><div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Início</th><th>Fim</th><th>Dias</th><th>Estado</th><th></th></tr></thead><tbody>';
     if(myLeaves.length===0){
@@ -1111,6 +1233,17 @@
         }catch(e){ showToast(e.message); }
       });
     }
+    var addActivityBtn = document.getElementById('detail-activity-add');
+    if(addActivityBtn) addActivityBtn.addEventListener('click', function(){ openActivityModal(emp.id); });
+    document.querySelectorAll('[data-activity-remove]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        if(!confirm('Remover este registo?')) return;
+        try{
+          await api('activities/'+btn.getAttribute('data-activity-remove'), {method:'DELETE'});
+          await loadEmployeeActivities(emp.id);
+        }catch(e){ showToast(e.message); }
+      });
+    });
     document.querySelectorAll('[data-approve]').forEach(function(b){ b.addEventListener('click', function(){ respondLeave(b.getAttribute('data-approve'), 'aprovado'); }); });
     document.querySelectorAll('[data-reject]').forEach(function(b){ b.addEventListener('click', function(){ respondLeave(b.getAttribute('data-reject'), 'rejeitado'); }); });
     document.querySelectorAll('[data-cancel]').forEach(function(btn){
@@ -1124,7 +1257,12 @@
 
   function viewTeam(){
     var q = teamListSearch.trim().toLowerCase();
-    var filtered = state.employees.filter(function(e){ return !q || e.name.toLowerCase().indexOf(q)!==-1 || (e.jobTitle||'').toLowerCase().indexOf(q)!==-1; });
+    var allTags = Array.from(new Set([].concat.apply([], state.employees.map(function(e){return e.tags||[];})))).sort();
+    var filtered = state.employees.filter(function(e){
+      var matchesQ = !q || e.name.toLowerCase().indexOf(q)!==-1 || (e.jobTitle||'').toLowerCase().indexOf(q)!==-1 || (e.tags||[]).some(function(t){return t.toLowerCase().indexOf(q)!==-1;});
+      var matchesTag = !teamListTagFilter || (e.tags||[]).indexOf(teamListTagFilter)!==-1;
+      return matchesQ && matchesTag;
+    });
     var pageSize = 8;
     var totalPages = Math.max(1, Math.ceil(filtered.length/pageSize));
     if(teamListPage>=totalPages) teamListPage = totalPages-1;
@@ -1133,8 +1271,13 @@
 
     var html = '<div class="page-head"><div><h2>Colaboradores</h2><p>Gere a equipa, contratos, saldos e acessos.</p></div>'+
       '<button class="btn btn-primary" id="add-emp">+ Novo colaborador</button></div>';
+    if(allTags.length){
+      html += '<div class="tag-filter-row"><button type="button" data-tagf=""><span class="tag-chip'+(!teamListTagFilter?' active':'')+'">Todas</span></button>'+
+        allTags.map(function(t){ return '<button type="button" data-tagf="'+esc(t)+'"><span class="tag-chip'+(teamListTagFilter===t?' active':'')+'">'+icon('tag')+' '+esc(t)+'</span></button>'; }).join('')+
+        '</div>';
+    }
     html += '<div class="panel"><div class="panel-head"><h3>'+filtered.length+' colaborador'+(filtered.length!==1?'es':'')+'</h3>'+
-      '<div class="search-input-wrap">'+icon('search')+'<input type="text" id="team-list-search" placeholder="Pesquisar por nome ou cargo…" value="'+esc(teamListSearch)+'"></div>'+
+      '<div class="search-input-wrap">'+icon('search')+'<input type="text" id="team-list-search" placeholder="Pesquisar por nome, cargo ou tag…" value="'+esc(teamListSearch)+'"></div>'+
       '</div><div class="table-wrap"><table><thead><tr><th>Colaborador</th><th>Início</th><th>Estado</th><th>Férias</th><th>Baixas</th><th></th></tr></thead><tbody>';
     if(pageRows.length===0){
       html += '<tr><td colspan="6"><div class="empty">Nenhum colaborador encontrado.</div></td></tr>';
@@ -1142,7 +1285,7 @@
       pageRows.forEach(function(e){
         var b = e.balances;
         var vRemain = e.vacationDaysTotal - b.ferias.aprovado, sRemain = e.sickDaysTotal - b.baixa.aprovado;
-        html += '<tr><td><div class="list-item-main">'+avatarHtml(e)+'<div><div class="li-name">'+esc(e.name)+'</div><div class="li-sub">'+esc(e.jobTitle||(e.role==='gestor'?'Gestor':'Colaborador'))+'</div></div></div></td>'+
+        html += '<tr><td><div class="list-item-main">'+avatarHtml(e)+'<div><div class="li-name">'+esc(e.name)+'</div><div class="li-sub">'+esc(e.jobTitle||(e.role==='gestor'?'Gestor':'Colaborador'))+'</div>'+tagRow(e.tags)+'</div></div></td>'+
           '<td class="mono">'+fmt(e.startDate)+'</td>'+
           '<td>'+employeeStatusBadge(e)+'</td>'+
           '<td class="bal">'+b.ferias.aprovado+'/'+e.vacationDaysTotal+' <span class="'+(vRemain<0?'low':'')+'">('+vRemain+' restam)</span>'+(b.ferias.pendente>0?'<div class="pending-note">+'+b.ferias.pendente+' pend.</div>':'')+'</td>'+
@@ -1176,8 +1319,11 @@
     var prevBtn = document.getElementById('team-list-prev'), nextBtn = document.getElementById('team-list-next');
     if(prevBtn) prevBtn.addEventListener('click', function(){ teamListPage--; renderMain(); });
     if(nextBtn) nextBtn.addEventListener('click', function(){ teamListPage++; renderMain(); });
+    document.querySelectorAll('[data-tagf]').forEach(function(btn){
+      btn.addEventListener('click', function(){ teamListTagFilter = btn.getAttribute('data-tagf'); teamListPage = 0; renderMain(); });
+    });
     document.querySelectorAll('[data-view-emp]').forEach(function(btn){
-      btn.addEventListener('click', function(){ viewingEmployeeId = btn.getAttribute('data-view-emp'); currentView='empDetail'; render(); });
+      btn.addEventListener('click', function(){ openEmployeeDetail(btn.getAttribute('data-view-emp')); });
     });
     document.querySelectorAll('[data-mark]').forEach(function(btn){
       btn.addEventListener('click', function(){ openLeaveModal(btn.getAttribute('data-mark'), btn.getAttribute('data-name')); });
@@ -1231,7 +1377,7 @@
 
   function openEmployeeModal(emp){
     var isNew = !emp;
-    var e = emp || { id:null, name:'', startDate: todayIso(), email:'', phone:'', username:'', role:'colaborador', vacationDaysTotal:22, sickDaysTotal:3, jobTitle:'', contractType:'efetivo', contractEnd:'' };
+    var e = emp || { id:null, name:'', startDate: todayIso(), email:'', phone:'', username:'', role:'colaborador', vacationDaysTotal:22, sickDaysTotal:3, jobTitle:'', contractType:'efetivo', contractEnd:'', tags:[] };
     var contractOptions = CONTRACT_TYPES.map(function(c){ return '<option value="'+c.value+'"'+(e.contractType===c.value?' selected':'')+'>'+c.label+'</option>'; }).join('');
     var m = openModal(
       '<h3>'+(isNew?'Novo colaborador':'Editar colaborador')+'</h3><p class="modal-sub">Preenche os dados, o contrato e o acesso de login.</p>'+
@@ -1256,6 +1402,7 @@
         '<div class="field"><label>Dias de férias / ano</label><input id="f-vac" type="number" min="0" value="'+e.vacationDaysTotal+'"></div>'+
         '<div class="field"><label>Dias de baixa / ano</label><input id="f-sick" type="number" min="0" value="'+e.sickDaysTotal+'"></div>'+
       '</div>'+
+      '<div class="field"><label>Tags</label><input id="f-tags" placeholder="ex: Designer, R&D, Evento X" value="'+esc((e.tags||[]).join(', '))+'"><div class="form-note">Separadas por vírgula.</div></div>'+
       '<div class="field-row">'+
         '<div class="field"><label>Utilizador</label><input id="f-user" value="'+esc(e.username)+'"></div>'+
         '<div class="field"><label>'+(isNew?'Palavra-passe':'Nova palavra-passe (opcional)')+'</label><input id="f-pass" value=""></div>'+
@@ -1287,6 +1434,7 @@
         vacationDaysTotal: parseInt(document.getElementById('f-vac').value,10) || 0,
         sickDaysTotal: parseInt(document.getElementById('f-sick').value,10) || 0,
         jobTitle: document.getElementById('f-job').value.trim(),
+        tags: document.getElementById('f-tags').value.split(',').map(function(t){return t.trim();}).filter(Boolean),
         contractType: document.getElementById('f-contract-type').value,
         contractEnd: document.getElementById('f-contract-type').value==='efetivo' ? null : (document.getElementById('f-contract-end').value || null),
       };
@@ -1296,6 +1444,40 @@
         else await api('employees/'+e.id, {method:'PUT', body: JSON.stringify(payload)});
         closeModal(); await loadState();
       }catch(err){ errEl.textContent = err.message; errEl.style.display='block'; }
+    });
+  }
+
+  function openActivityModal(empId){
+    var typeOptions = Object.keys(ACTIVITY_TYPE_LABELS).map(function(k){ return '<option value="'+k+'">'+ACTIVITY_TYPE_LABELS[k]+'</option>'; }).join('');
+    var statusOptions = Object.keys(ACTIVITY_STATUS_LABELS).map(function(k){ return '<option value="'+k+'">'+ACTIVITY_STATUS_LABELS[k]+'</option>'; }).join('');
+    var impactOptions = '<option value="">—</option>'+Object.keys(ACTIVITY_IMPACT_LABELS).map(function(k){ return '<option value="'+k+'">'+ACTIVITY_IMPACT_LABELS[k]+'</option>'; }).join('');
+    var m = openModal(
+      '<h3>Registar interação</h3><p class="modal-sub">O que aconteceu, quando e como correu.</p>'+
+      '<div class="form-error" id="act-err"></div>'+
+      '<div class="field-row">'+
+        '<div class="field"><label>Tipo</label><select id="f-act-type">'+typeOptions+'</select></div>'+
+        '<div class="field"><label>Estado</label><select id="f-act-status">'+statusOptions+'</select></div>'+
+      '</div>'+
+      '<div class="field"><label>Detalhes</label><textarea id="f-act-details" rows="4" placeholder="O que foi falado ou combinado…" style="width:100%;border:1px solid var(--sand);border-radius:10px;padding:10px 12px;background:var(--paper);color:var(--ink);font-family:inherit;font-size:13.5px;resize:vertical;"></textarea></div>'+
+      '<div class="field"><label>Impacto (opcional)</label><select id="f-act-impact">'+impactOptions+'</select></div>'+
+      '<div class="modal-actions"><button class="btn btn-ghost" id="act-cancel">Cancelar</button><button class="btn btn-primary" id="act-save">Guardar</button></div>'
+    );
+    m.querySelector('#act-cancel').addEventListener('click', closeModal);
+    m.querySelector('#act-save').addEventListener('click', async function(){
+      var details = document.getElementById('f-act-details').value.trim();
+      var errEl = document.getElementById('act-err');
+      if(!details){ errEl.textContent='Descreve o que aconteceu.'; errEl.style.display='block'; return; }
+      try{
+        await api('employees/'+empId+'/activities', {method:'POST', body: JSON.stringify({
+          type: document.getElementById('f-act-type').value,
+          status: document.getElementById('f-act-status').value,
+          impact: document.getElementById('f-act-impact').value,
+          details: details
+        })});
+        closeModal();
+        await loadEmployeeActivities(empId);
+        showToast('Interação registada.');
+      }catch(e){ errEl.textContent = e.message; errEl.style.display='block'; }
     });
   }
 

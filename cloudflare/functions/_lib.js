@@ -97,10 +97,35 @@ export function publicEmployee(e) {
     phone: e.phone,
     notes: e.notes,
     photo: e.photo,
+    tags: parseTags(e.tags),
   };
 }
 
-export function publicLeave(l, employeeName) {
+export function parseTags(raw) {
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
+export function publicActivity(a, employeeName) {
+  return {
+    id: a.id,
+    employeeId: a.employee_id,
+    employeeName,
+    type: a.type,
+    details: a.details,
+    status: a.status,
+    impact: a.impact,
+    createdBy: a.created_by,
+    createdAt: a.created_at,
+  };
+}
+
+export function publicLeave(l, employeeName, respondedByName) {
   return {
     id: l.id,
     employeeId: l.employee_id,
@@ -111,6 +136,7 @@ export function publicLeave(l, employeeName) {
     days: l.days,
     status: l.status,
     respondedBy: l.responded_by,
+    respondedByName: respondedByName || null,
     respondedAt: l.responded_at,
     createdAt: l.created_at,
   };
