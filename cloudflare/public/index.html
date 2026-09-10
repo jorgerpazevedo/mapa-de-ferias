@@ -987,6 +987,20 @@
 
     if(statCards) html += '<div class="stat-row">'+statCards+'</div>';
 
+    html += '<div class="panel"><div class="panel-head"><h3>Comunicados</h3>'+(me.role==='gestor'?'<button class="btn btn-primary btn-sm" id="add-announcement">+ Novo comunicado</button>':'')+'</div><div class="panel-body pad">';
+    if(!state.announcements || state.announcements.length===0){
+      html += emptyState('mail','Sem comunicados','Ainda não há comunicados da empresa.');
+    } else {
+      state.announcements.slice(0,5).forEach(function(a){
+        html += '<div class="activity-item"><div class="activity-icon">'+icon('mail')+'</div><div style="flex:1;min-width:0;">'+
+          '<div class="activity-head"><span class="activity-type">'+esc(a.title)+'</span><span class="activity-meta">'+fmtDateTime(a.createdAt)+'</span></div>'+
+          '<div class="activity-details">'+esc(a.body)+'</div>'+
+          (a.createdByName?'<div class="status-detail" style="margin-top:4px;">por '+esc(a.createdByName)+'</div>':'')+
+          '</div>'+(me.role==='gestor'?'<button class="activity-remove" data-announcement-remove="'+a.id+'" title="Remover">✕</button>':'')+'</div>';
+      });
+    }
+    html += '</div></div>';
+
     if(me.role==='gestor' && pending.length>0){
       html += '<div class="panel panel-attention"><div class="panel-head"><h3>Pedidos pendentes</h3></div><div class="panel-body pad" style="padding-top:2px;">';
       pending.forEach(function(l){
@@ -997,6 +1011,18 @@
     }
 
     if(me.role==='gestor'){
+      var openMsgs = (state.messages||[]).filter(function(m){return m.status==='aberto';});
+      if(openMsgs.length>0){
+        html += '<div class="panel panel-attention"><div class="panel-head"><h3>Pedidos de Colaboradores</h3></div><div class="panel-body pad" style="padding-top:2px;">';
+        openMsgs.forEach(function(m){
+          html += '<div class="req-row"><div class="list-item-main">'+avatarHtml(employeeById(m.employeeId)||{name:m.employeeName})+'<div><div class="li-name">'+esc(m.employeeName)+' · '+esc(m.subject)+'</div><div class="li-sub">'+esc(m.body)+'</div></div></div>'+
+            '<div class="req-actions"><button class="btn btn-primary btn-sm" data-msg-respond="'+m.id+'">Responder</button></div></div>';
+        });
+        html += '</div></div>';
+      }
+    }
+
+    if(me.role==='gestor'){
       html += teamStatusPanel();
     }
 
@@ -1004,6 +1030,24 @@
     html += balanceCard(me, 'Saldo '+new Date().getFullYear());
     html += calendarWidget(me.id);
     html += '</div>';
+
+    if(me.role!=='gestor'){
+      html += '<div class="panel"><div class="panel-head"><h3>Os meus pedidos</h3><button class="btn btn-ghost btn-sm" id="add-message">+ Pedido de informação</button></div><div class="panel-body pad">';
+      var myMsgs = state.messages||[];
+      if(myMsgs.length===0){
+        html += emptyState('mail','Sem pedidos enviados','Usa isto para pedir informação ao RH — férias e ausências têm o seu próprio botão acima.');
+      } else {
+        myMsgs.forEach(function(m){
+          html += '<div class="activity-item"><div class="activity-icon">'+icon('mail')+'</div><div style="flex:1;min-width:0;">'+
+            '<div class="activity-head"><span class="activity-type">'+esc(m.subject)+'</span><span class="activity-meta">'+fmtDateTime(m.createdAt)+'</span></div>'+
+            '<div class="activity-details">'+esc(m.body)+'</div>'+
+            '<div class="activity-badges">'+(m.status==='aberto'?'<span class="chip chip-pendente">Por responder</span>':'<span class="chip chip-aprovado">Respondido</span>')+'</div>'+
+            (m.response?'<div class="status-detail" style="margin-top:6px;">Resposta'+(m.respondedByName?' de '+esc(m.respondedByName):'')+': '+esc(m.response)+'</div>':'')+
+            '</div>'+(m.status==='aberto'?'<button class="activity-remove" data-message-remove="'+m.id+'" title="Cancelar pedido">✕</button>':'')+'</div>';
+        });
+      }
+      html += '</div></div>';
+    }
 
     html += '<div class="panel"><div class="panel-head"><h3>'+(me.role==='gestor'?'Próximas ausências (equipa)':'As tuas próximas ausências')+'</h3></div><div class="panel-body pad">';
     var list = me.role==='gestor' ? upcoming : upcoming.filter(function(l){return l.employeeId===me.id;});
@@ -1044,6 +1088,31 @@
     if(teamNext) teamNext.addEventListener('click', function(){ teamPage++; renderMain(); });
     document.querySelectorAll('[data-view-emp]').forEach(function(btn){
       btn.addEventListener('click', function(){ openEmployeeDetail(btn.getAttribute('data-view-emp')); });
+    });
+
+    var addAnnouncement = document.getElementById('add-announcement');
+    if(addAnnouncement) addAnnouncement.addEventListener('click', openAnnouncementModal);
+    document.querySelectorAll('[data-announcement-remove]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        if(!confirm('Remover este comunicado?')) return;
+        try{ await api('announcements/'+btn.getAttribute('data-announcement-remove'), {method:'DELETE'}); await loadState(); }
+        catch(e){ showToast(e.message); }
+      });
+    });
+    var addMessage = document.getElementById('add-message');
+    if(addMessage) addMessage.addEventListener('click', openMessageModal);
+    document.querySelectorAll('[data-message-remove]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        if(!confirm('Cancelar este pedido?')) return;
+        try{ await api('messages/'+btn.getAttribute('data-message-remove'), {method:'DELETE'}); await loadState(); }
+        catch(e){ showToast(e.message); }
+      });
+    });
+    document.querySelectorAll('[data-msg-respond]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var msg = (state.messages||[]).find(function(m){return m.id===btn.getAttribute('data-msg-respond');});
+        if(msg) openMessageRespondModal(msg);
+      });
     });
   }
 
@@ -1444,6 +1513,70 @@
         else await api('employees/'+e.id, {method:'PUT', body: JSON.stringify(payload)});
         closeModal(); await loadState();
       }catch(err){ errEl.textContent = err.message; errEl.style.display='block'; }
+    });
+  }
+
+  function openAnnouncementModal(){
+    var m = openModal(
+      '<h3>Novo comunicado</h3><p class="modal-sub">Visível para toda a equipa no Meu Painel.</p>'+
+      '<div class="form-error" id="an-err"></div>'+
+      '<div class="field"><label>Título</label><input id="f-an-title" placeholder="ex: Encerramento de Natal"></div>'+
+      '<div class="field"><label>Mensagem</label><textarea id="f-an-body" rows="4" style="width:100%;border:1px solid var(--sand);border-radius:10px;padding:10px 12px;background:var(--paper);color:var(--ink);font-family:inherit;font-size:13.5px;resize:vertical;"></textarea></div>'+
+      '<div class="modal-actions"><button class="btn btn-ghost" id="an-cancel">Cancelar</button><button class="btn btn-primary" id="an-save">Publicar</button></div>'
+    );
+    m.querySelector('#an-cancel').addEventListener('click', closeModal);
+    m.querySelector('#an-save').addEventListener('click', async function(){
+      var title = document.getElementById('f-an-title').value.trim();
+      var body = document.getElementById('f-an-body').value.trim();
+      var errEl = document.getElementById('an-err');
+      if(!title || !body){ errEl.textContent='Preenche o título e a mensagem.'; errEl.style.display='block'; return; }
+      try{
+        await api('announcements', {method:'POST', body: JSON.stringify({title:title, body:body})});
+        closeModal(); await loadState();
+        showToast('Comunicado publicado.');
+      }catch(e){ errEl.textContent = e.message; errEl.style.display='block'; }
+    });
+  }
+
+  function openMessageModal(){
+    var m = openModal(
+      '<h3>Pedido de informação</h3><p class="modal-sub">Envia uma pergunta ou pedido ao RH — não é para marcar férias ou baixa.</p>'+
+      '<div class="form-error" id="msg-err"></div>'+
+      '<div class="field"><label>Assunto</label><input id="f-msg-subject" placeholder="ex: Dúvida sobre subsídio de refeição"></div>'+
+      '<div class="field"><label>Mensagem</label><textarea id="f-msg-body" rows="4" style="width:100%;border:1px solid var(--sand);border-radius:10px;padding:10px 12px;background:var(--paper);color:var(--ink);font-family:inherit;font-size:13.5px;resize:vertical;"></textarea></div>'+
+      '<div class="modal-actions"><button class="btn btn-ghost" id="msg-cancel">Cancelar</button><button class="btn btn-primary" id="msg-save">Enviar</button></div>'
+    );
+    m.querySelector('#msg-cancel').addEventListener('click', closeModal);
+    m.querySelector('#msg-save').addEventListener('click', async function(){
+      var subject = document.getElementById('f-msg-subject').value.trim();
+      var body = document.getElementById('f-msg-body').value.trim();
+      var errEl = document.getElementById('msg-err');
+      if(!subject || !body){ errEl.textContent='Preenche o assunto e a mensagem.'; errEl.style.display='block'; return; }
+      try{
+        await api('messages', {method:'POST', body: JSON.stringify({subject:subject, body:body})});
+        closeModal(); await loadState();
+        showToast('Pedido enviado.');
+      }catch(e){ errEl.textContent = e.message; errEl.style.display='block'; }
+    });
+  }
+
+  function openMessageRespondModal(msg){
+    var m = openModal(
+      '<h3>Responder a '+esc(msg.employeeName)+'</h3><p class="modal-sub">'+esc(msg.subject)+' — '+esc(msg.body)+'</p>'+
+      '<div class="form-error" id="msgr-err"></div>'+
+      '<div class="field"><label>Resposta</label><textarea id="f-msgr-response" rows="4" style="width:100%;border:1px solid var(--sand);border-radius:10px;padding:10px 12px;background:var(--paper);color:var(--ink);font-family:inherit;font-size:13.5px;resize:vertical;"></textarea></div>'+
+      '<div class="modal-actions"><button class="btn btn-ghost" id="msgr-cancel">Cancelar</button><button class="btn btn-primary" id="msgr-save">Responder</button></div>'
+    );
+    m.querySelector('#msgr-cancel').addEventListener('click', closeModal);
+    m.querySelector('#msgr-save').addEventListener('click', async function(){
+      var response = document.getElementById('f-msgr-response').value.trim();
+      var errEl = document.getElementById('msgr-err');
+      if(!response){ errEl.textContent='Escreve uma resposta.'; errEl.style.display='block'; return; }
+      try{
+        await api('messages/'+msg.id+'/respond', {method:'POST', body: JSON.stringify({response:response})});
+        closeModal(); await loadState();
+        showToast('Resposta enviada.');
+      }catch(e){ errEl.textContent = e.message; errEl.style.display='block'; }
     });
   }
 

@@ -44,6 +44,26 @@ CREATE TABLE IF NOT EXISTS leaves (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS announcements (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  created_by TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  employee_id TEXT NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+  subject TEXT NOT NULL,
+  body TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'aberto',
+  response TEXT,
+  responded_by TEXT,
+  responded_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 CREATE TABLE IF NOT EXISTS sessions (
   token TEXT PRIMARY KEY,
   employee_id TEXT NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
@@ -54,3 +74,4 @@ CREATE TABLE IF NOT EXISTS sessions (
 CREATE INDEX IF NOT EXISTS idx_leaves_employee ON leaves(employee_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_employee ON sessions(employee_id);
 CREATE INDEX IF NOT EXISTS idx_activities_employee ON activities(employee_id);
+CREATE INDEX IF NOT EXISTS idx_messages_employee ON messages(employee_id);

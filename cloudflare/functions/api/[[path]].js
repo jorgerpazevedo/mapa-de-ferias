@@ -1,6 +1,7 @@
 import {
   json, parseCookies, sessionCookie, clearSessionCookie, createSession, currentEmployee,
   hashPassword, verifyPassword, randomHex, publicEmployee, publicLeave, publicActivity,
+  publicAnnouncement, publicMessage,
   businessDays, calendarDays, rangesOverlap, uid,
 } from '../_lib.js';
 
@@ -47,10 +48,23 @@ async function handleLogout(request, env) {
   return json({ ok: true }, { headers: { 'Set-Cookie': clearSessionCookie() } });
 }
 
+async function loadAnnouncements(env) {
+  const rows = await env.DB.prepare(
+    `SELECT a.*, c.name AS creator_name FROM announcements a LEFT JOIN employees c ON c.id = a.created_by ORDER BY a.created_at DESC LIMIT 30`
+  ).all();
+  return rows.results.map((a) => publicAnnouncement(a, a.creator_name));
+}
+
 async function handleState(request, env, me) {
+  const announcements = await loadAnnouncements(env);
   if (me.role === 'gestor') {
     const empRows = await env.DB.prepare('SELECT * FROM employees ORDER BY name').all();
     const leaveRows = await env.DB.prepare('SELECT * FROM leaves ORDER BY start_date').all();
+    const msgRows = await env.DB.prepare(
+      `SELECT m.*, e.name AS employee_name, r.name AS responder_name FROM messages m
+       LEFT JOIN employees e ON e.id = m.employee_id LEFT JOIN employees r ON r.id = m.responded_by
+       ORDER BY m.created_at DESC`
+    ).all();
     const nameById = {};
     empRows.results.forEach((e) => { nameById[e.id] = e.name; });
     return json({
@@ -61,15 +75,22 @@ async function handleState(request, env, me) {
         balances: await computeBalances(env.DB, e.id),
       }))),
       leaves: leaveRows.results.map((l) => publicLeave(l, nameById[l.employee_id], l.responded_by ? nameById[l.responded_by] : null)),
+      announcements,
+      messages: msgRows.results.map((m) => publicMessage(m, m.employee_name, m.responder_name)),
     });
   }
   const leaveRows = await env.DB.prepare(
     `SELECT l.*, r.name AS responder_name FROM leaves l LEFT JOIN employees r ON r.id = l.responded_by WHERE l.employee_id = ? ORDER BY l.start_date`
   ).bind(me.id).all();
+  const msgRows = await env.DB.prepare(
+    `SELECT m.*, r.name AS responder_name FROM messages m LEFT JOIN employees r ON r.id = m.responded_by WHERE m.employee_id = ? ORDER BY m.created_at DESC`
+  ).bind(me.id).all();
   return json({
     role: 'colaborador',
     me: { ...publicEmployee(me), balances: await computeBalances(env.DB, me.id) },
     leaves: leaveRows.results.map((l) => publicLeave(l, me.name, l.responder_name)),
+    announcements,
+    messages: msgRows.results.map((m) => publicMessage(m, me.name, m.responder_name)),
   });
 }
 
@@ -297,6 +318,56 @@ async function handleUpdateNotes(request, env, me, empId) {
   return json({ ok: true });
 }
 
+async function handleCreateAnnouncement(request, env, me) {
+  if (me.role !== 'gestor') return json({ error: 'Só o gestor pode publicar comunicados.' }, { status: 403 });
+  const body = await request.json().catch(() => ({}));
+  const title = (body.title || '').trim();
+  const abody = (body.body || '').trim();
+  if (!title || !abody) return json({ error: 'Preenche o título e a mensagem.' }, { status: 400 });
+  const id = uid('an');
+  await env.DB.prepare('INSERT INTO announcements (id, title, body, created_by, created_at) VALUES (?, ?, ?, ?, ?)')
+    .bind(id, title, abody, me.id, new Date().toISOString()).run();
+  return json({ ok: true, id });
+}
+
+async function handleDeleteAnnouncement(request, env, me, id) {
+  if (me.role !== 'gestor') return json({ error: 'Só o gestor pode remover comunicados.' }, { status: 403 });
+  await env.DB.prepare('DELETE FROM announcements WHERE id = ?').bind(id).run();
+  return json({ ok: true });
+}
+
+async function handleCreateMessage(request, env, me) {
+  const body = await request.json().catch(() => ({}));
+  const subject = (body.subject || '').trim();
+  const mbody = (body.body || '').trim();
+  if (!subject || !mbody) return json({ error: 'Preenche o assunto e a mensagem.' }, { status: 400 });
+  const id = uid('m');
+  await env.DB.prepare('INSERT INTO messages (id, employee_id, subject, body, status, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+    .bind(id, me.id, subject, mbody, 'aberto', new Date().toISOString()).run();
+  return json({ ok: true, id });
+}
+
+async function handleRespondMessage(request, env, me, id) {
+  if (me.role !== 'gestor') return json({ error: 'Só o gestor pode responder.' }, { status: 403 });
+  const body = await request.json().catch(() => ({}));
+  const response = (body.response || '').trim();
+  if (!response) return json({ error: 'Escreve uma resposta.' }, { status: 400 });
+  const msg = await env.DB.prepare('SELECT * FROM messages WHERE id = ?').bind(id).first();
+  if (!msg) return json({ error: 'Pedido não encontrado.' }, { status: 404 });
+  await env.DB.prepare('UPDATE messages SET status = ?, response = ?, responded_by = ?, responded_at = ? WHERE id = ?')
+    .bind('respondido', response, me.id, new Date().toISOString(), id).run();
+  return json({ ok: true });
+}
+
+async function handleDeleteMessage(request, env, me, id) {
+  const msg = await env.DB.prepare('SELECT * FROM messages WHERE id = ?').bind(id).first();
+  if (!msg) return json({ error: 'Pedido não encontrado.' }, { status: 404 });
+  const canDelete = me.role === 'gestor' || (msg.employee_id === me.id && msg.status === 'aberto');
+  if (!canDelete) return json({ error: 'Não podes remover este pedido.' }, { status: 403 });
+  await env.DB.prepare('DELETE FROM messages WHERE id = ?').bind(id).run();
+  return json({ ok: true });
+}
+
 export async function onRequest(context) {
   const { request, env, params } = context;
   const segments = Array.isArray(params.path) ? params.path : [];
@@ -326,6 +397,11 @@ export async function onRequest(context) {
     if (segments[0] === 'employees' && segments[2] === 'activities' && segments.length === 3 && method === 'GET') return await handleListActivities(request, env, me, segments[1]);
     if (segments[0] === 'employees' && segments[2] === 'activities' && segments.length === 3 && method === 'POST') return await handleCreateActivity(request, env, me, segments[1]);
     if (segments[0] === 'activities' && segments.length === 2 && method === 'DELETE') return await handleDeleteActivity(request, env, me, segments[1]);
+    if (segments[0] === 'announcements' && segments.length === 1 && method === 'POST') return await handleCreateAnnouncement(request, env, me);
+    if (segments[0] === 'announcements' && segments.length === 2 && method === 'DELETE') return await handleDeleteAnnouncement(request, env, me, segments[1]);
+    if (segments[0] === 'messages' && segments.length === 1 && method === 'POST') return await handleCreateMessage(request, env, me);
+    if (segments[0] === 'messages' && segments[2] === 'respond' && method === 'POST') return await handleRespondMessage(request, env, me, segments[1]);
+    if (segments[0] === 'messages' && segments.length === 2 && method === 'DELETE') return await handleDeleteMessage(request, env, me, segments[1]);
 
     return json({ error: 'Rota não encontrada.' }, { status: 404 });
   } catch (err) {

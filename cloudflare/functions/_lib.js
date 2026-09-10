@@ -125,6 +125,33 @@ export function publicActivity(a, employeeName) {
   };
 }
 
+export function publicAnnouncement(a, createdByName) {
+  return {
+    id: a.id,
+    title: a.title,
+    body: a.body,
+    createdBy: a.created_by,
+    createdByName: createdByName || null,
+    createdAt: a.created_at,
+  };
+}
+
+export function publicMessage(m, employeeName, respondedByName) {
+  return {
+    id: m.id,
+    employeeId: m.employee_id,
+    employeeName: employeeName || null,
+    subject: m.subject,
+    body: m.body,
+    status: m.status,
+    response: m.response,
+    respondedBy: m.responded_by,
+    respondedByName: respondedByName || null,
+    respondedAt: m.responded_at,
+    createdAt: m.created_at,
+  };
+}
+
 export function publicLeave(l, employeeName, respondedByName) {
   return {
     id: l.id,
