@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mapa de Férias</title>
+<title>HR-PCT</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
@@ -345,8 +345,8 @@
 <div id="root">
   <div id="login-view">
     <div class="login-card">
-      <div class="login-mark">🌴</div>
-      <h1>Mapa de Férias</h1>
+      <div class="login-mark">🌍</div>
+      <h1>HR-PCT</h1>
       <p class="login-sub">Inicia sessão para consultar o teu saldo ou marcar ausências.</p>
       <div class="login-error" id="login-error"></div>
       <form id="login-form">
@@ -361,7 +361,7 @@
   <div id="app-view" class="hidden">
     <div class="topbar">
       <button class="hamburger-btn" id="hamburger-btn" aria-label="Abrir menu"></button>
-      <div class="brand"><div class="brand-mark">🌴</div><div class="brand-name">Mapa de Férias</div></div>
+      <div class="brand"><div class="brand-mark">🌍</div><div class="brand-name">HR-PCT</div></div>
       <div class="topbar-spacer"></div>
       <button class="topbar-avatar" id="topbar-avatar" title="Abrir menu">—</button>
     </div>
@@ -370,7 +370,7 @@
     <div class="drawer" id="drawer">
       <div class="drawer-head">
         <div class="drawer-head-top">
-          <div class="brand"><div class="brand-mark">🌴</div><div class="brand-name">Mapa de Férias</div></div>
+          <div class="brand"><div class="brand-mark">🌍</div><div class="brand-name">HR-PCT</div></div>
           <button class="drawer-close" id="drawer-close" aria-label="Fechar menu"></button>
         </div>
         <div class="drawer-profile">
@@ -937,7 +937,7 @@
     var blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8;'});
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
-    a.href = url; a.download = 'mapa-de-ferias-'+todayIso()+'.csv';
+    a.href = url; a.download = 'hr-pct-'+todayIso()+'.csv';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
@@ -952,7 +952,7 @@
   }
 
   function viewHelp(){
-    return '<div class="page-head"><div><h2>Ajuda & Políticas</h2><p>Como funciona o Mapa de Férias.</p></div></div>'+
+    return '<div class="page-head"><div><h2>Ajuda & Políticas</h2><p>Como funciona o HR-PCT.</p></div></div>'+
       '<div class="panel"><div class="panel-body pad">'+
       '<p style="margin:0 0 14px;">As férias contam apenas dias úteis (segunda a sexta); as baixas contam todos os dias do período. Ambos são calculados por ano civil.</p>'+
       '<p style="margin:0 0 14px;">Quando um colaborador marca uma ausência, fica <strong>pendente</strong> até um gestor aprovar ou rejeitar. Quando é o próprio gestor a marcar, fica logo aprovada.</p>'+
