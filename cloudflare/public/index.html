@@ -5,43 +5,43 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mapa de Férias</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
   :root{
-    --paper:#F3F5EF; --surface:#FFFFFF; --surface-2:#EAEDE3;
-    --ink:#16211D; --ink-soft:#57635B; --ink-faint:#8A9089;
-    --accent:#B97423; --accent-ink:#3A2408; --accent-bg:#F3E4CC;
-    --moss:#3F6B52; --moss-bg:#E1EBE4;
-    --rose:#AE4B3F; --rose-bg:#F5E3E0;
-    --pending:#8A6D1D; --pending-bg:#F1E7C9;
-    --sand:#DCD7C8;
-    --shadow:0 1px 2px rgba(22,33,29,.06), 0 10px 28px -14px rgba(22,33,29,.22);
+    --paper:#F5F7FB; --surface:#FFFFFF; --surface-2:#EDF1FA;
+    --ink:#14181F; --ink-soft:#5B6472; --ink-faint:#93A0B4;
+    --accent:#3B82F6; --accent-ink:#1D4ED8; --accent-bg:#E7F0FE;
+    --moss:#16A34A; --moss-bg:#E7F8EC;
+    --rose:#DC2626; --rose-bg:#FDEAEA;
+    --pending:#D97706; --pending-bg:#FEF3E0;
+    --sand:#E3E8F0;
+    --shadow:0 1px 2px rgba(20,24,31,.05), 0 12px 28px -16px rgba(20,24,31,.16);
     --radius:14px;
-    --font-display:'Fraunces', ui-serif, Georgia, serif;
+    --font-display:'Work Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
     --font-body:'Work Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
     --font-mono:'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
-      --paper:#12160F; --surface:#191F17; --surface-2:#20261D;
-      --ink:#ECE9DF; --ink-soft:#AEB3A6; --ink-faint:#767C71;
-      --accent:#E3A855; --accent-ink:#291805; --accent-bg:#33270F;
-      --moss:#7FAE8F; --moss-bg:#1D2A21;
-      --rose:#E08D7E; --rose-bg:#331E1A;
-      --pending:#E3C568; --pending-bg:#332C14;
-      --sand:#2A3126;
-      --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.5);
+      --paper:#0E1420; --surface:#151C2C; --surface-2:#1C2436;
+      --ink:#EDF1F8; --ink-soft:#A7B0C0; --ink-faint:#6C7688;
+      --accent:#5B93F5; --accent-ink:#BFD7FF; --accent-bg:#1E2C46;
+      --moss:#4ADE80; --moss-bg:#123322;
+      --rose:#F87171; --rose-bg:#3A1717;
+      --pending:#FBBF24; --pending-bg:#3A2A0C;
+      --sand:#232C40;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 12px 28px -16px rgba(0,0,0,.55);
     }
   }
   :root[data-theme="dark"]{
-    --paper:#12160F; --surface:#191F17; --surface-2:#20261D;
-    --ink:#ECE9DF; --ink-soft:#AEB3A6; --ink-faint:#767C71;
-    --accent:#E3A855; --accent-ink:#291805; --accent-bg:#33270F;
-    --moss:#7FAE8F; --moss-bg:#1D2A21;
-    --rose:#E08D7E; --rose-bg:#331E1A;
-    --pending:#E3C568; --pending-bg:#332C14;
-    --sand:#2A3126;
-    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.5);
+    --paper:#0E1420; --surface:#151C2C; --surface-2:#1C2436;
+    --ink:#EDF1F8; --ink-soft:#A7B0C0; --ink-faint:#6C7688;
+    --accent:#5B93F5; --accent-ink:#BFD7FF; --accent-bg:#1E2C46;
+    --moss:#4ADE80; --moss-bg:#123322;
+    --rose:#F87171; --rose-bg:#3A1717;
+    --pending:#FBBF24; --pending-bg:#3A2A0C;
+    --sand:#232C40;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 12px 28px -16px rgba(0,0,0,.55);
   }
 
   *{box-sizing:border-box;}
@@ -51,7 +51,7 @@
     font-family:var(--font-body); font-size:15px; line-height:1.5;
     -webkit-font-smoothing:antialiased;
   }
-  h1,h2,h3{font-family:var(--font-display); font-weight:600; text-wrap:balance; margin:0;}
+  h1,h2,h3{font-family:var(--font-display); font-weight:700; text-wrap:balance; margin:0;}
   .mono{font-family:var(--font-mono); font-variant-numeric:tabular-nums;}
   button{font-family:inherit; font-size:inherit; cursor:pointer;}
   input,select{font-family:inherit; font-size:inherit;}
@@ -88,7 +88,7 @@
   .field input:focus, .field select:focus{border-color:var(--accent);}
   .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:11px 18px; border-radius:10px; border:1px solid transparent; font-weight:600; font-size:14.5px; transition:transform .08s ease, opacity .15s ease; text-decoration:none;}
   .btn:active{transform:scale(.98);}
-  .btn-primary{background:var(--accent); color:var(--accent-ink);}
+  .btn-primary{background:var(--accent); color:#fff;}
   .btn-primary:hover{opacity:.92;}
   .btn-primary:disabled{opacity:.5; cursor:not-allowed;}
   .btn-ghost{background:transparent; border-color:var(--sand); color:var(--ink);}
@@ -132,9 +132,9 @@
   .drawer-item{display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:10px 10px; border-radius:10px; background:transparent; border:none; color:var(--ink-soft); font-weight:500; font-size:14px; margin-bottom:2px;}
   .drawer-item svg{width:19px; height:19px; flex-shrink:0;}
   .drawer-item:hover{background:var(--surface-2); color:var(--ink);}
-  .drawer-item.active{background:var(--accent-bg); color:var(--accent-ink);}
+  .drawer-item.active{background:var(--accent); color:#fff;}
   .drawer-section.rh .drawer-item:hover{background:rgba(255,255,255,.35);}
-  .drawer-section.rh .drawer-item.active{background:var(--surface); box-shadow:var(--shadow);}
+  .drawer-section.rh .drawer-item.active{background:var(--surface); color:var(--accent-ink); box-shadow:var(--shadow);}
   .drawer-item .item-badge{margin-left:auto; background:var(--rose); color:#fff; font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; font-family:var(--font-mono);}
   .drawer-foot{padding:14px 18px; border-top:1px solid var(--sand);}
 
@@ -145,7 +145,7 @@
 
   .stat-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:28px;}
   .stat-card{background:var(--surface); border:1px solid var(--sand); border-radius:var(--radius); padding:18px 20px; box-shadow:var(--shadow);}
-  .stat-num{font-family:var(--font-display); font-size:30px; font-weight:600; line-height:1;}
+  .stat-num{font-family:var(--font-display); font-size:32px; font-weight:800; line-height:1; letter-spacing:-.01em;}
   .stat-label{font-size:12.5px; color:var(--ink-soft); margin-top:6px;}
 
   .panel{background:var(--surface); border:1px solid var(--sand); border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:24px;}
@@ -272,7 +272,7 @@
   .breadcrumb button:hover{color:var(--accent-ink); text-decoration:underline;}
   .avatar-lg{width:64px; height:64px; border-radius:50%; background:var(--surface-2); color:var(--ink-soft); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:22px; flex-shrink:0; object-fit:cover;}
   .avatar-upload-wrap{position:relative; flex-shrink:0;}
-  .avatar-upload-btn{position:absolute; bottom:-2px; right:-2px; width:24px; height:24px; border-radius:50%; background:var(--accent); color:var(--accent-ink); border:2px solid var(--surface); display:flex; align-items:center; justify-content:center; font-size:11px; cursor:pointer; padding:0;}
+  .avatar-upload-btn{position:absolute; bottom:-2px; right:-2px; width:24px; height:24px; border-radius:50%; background:var(--accent); color:#fff; border:2px solid var(--surface); display:flex; align-items:center; justify-content:center; font-size:11px; cursor:pointer; padding:0;}
   .avatar-upload-btn:hover{opacity:.9;}
   .comm-link{display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:10px; border:1px solid var(--sand); color:var(--ink); margin-bottom:8px;}
   .comm-link:last-child{margin-bottom:0;}
@@ -330,7 +330,7 @@
   .wallchart-cell.weekend{background:var(--surface-2);}
   .wallchart-cell.today{box-shadow:inset 0 0 0 1.5px var(--ink); border-radius:6px; color:var(--ink); font-weight:700;}
   .wallchart-bar{grid-row:1; align-self:center; height:22px; margin:0 2px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:600; overflow:hidden; white-space:nowrap; padding:0 4px;}
-  .wallchart-bar.ferias{background:var(--accent); color:var(--accent-ink);}
+  .wallchart-bar.ferias{background:var(--accent); color:#fff;}
   .wallchart-bar.baixa{background:var(--moss); color:#fff;}
   .wallchart-bar.pendente{background:var(--pending-bg); color:var(--pending); box-shadow:inset 0 0 0 1.5px var(--pending); border-style:dashed;}
   .wallchart-legend{display:flex; gap:14px; flex-wrap:wrap; padding:0 20px 16px; font-size:11.5px; color:var(--ink-soft);}
