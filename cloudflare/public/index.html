@@ -770,7 +770,7 @@
     if(currentView==='reports'){ main.innerHTML = viewReports(); wireReports(); return; }
     if(currentView==='settings'){ main.innerHTML = viewSettings(); return; }
     if(currentView==='help'){ main.innerHTML = viewHelp(); return; }
-    if(currentView==='justificativos'){ main.innerHTML = viewJustificativos(); return; }
+    if(currentView==='justificativos'){ main.innerHTML = viewJustificativos(); wireJustificativos(); return; }
     main.innerHTML = viewHome(); wireHome();
   }
 
@@ -960,9 +960,88 @@
       '</div></div>';
   }
 
+  function formatFileSize(bytes){
+    if(bytes<1024) return bytes+' B';
+    if(bytes<1024*1024) return (bytes/1024).toFixed(0)+' KB';
+    return (bytes/(1024*1024)).toFixed(1)+' MB';
+  }
+  function readFileAsDataURL(file){
+    return new Promise(function(resolve,reject){
+      var reader = new FileReader();
+      reader.onerror = function(){ reject(new Error('Não foi possível ler o ficheiro.')); };
+      reader.onload = function(){ resolve(reader.result); };
+      reader.readAsDataURL(file);
+    });
+  }
+
   function viewJustificativos(){
-    return '<div class="page-head"><div><h2>Justificativos</h2><p>Atestados médicos e comprovativos de dispensa.</p></div></div>'+
-      '<div class="panel"><div class="panel-body pad">'+emptyState('paperclip','Ainda não há justificativos','Em breve vais poder anexar aqui atestados médicos e outros comprovativos, associando-os diretamente aos teus pedidos de baixa.')+'</div></div>';
+    var me = state.me;
+    var mine = (state.justificativos||[]).filter(function(j){return j.employeeId===me.id;});
+    var myBaixas = state.leaves.filter(function(l){return l.employeeId===me.id && l.type==='baixa';});
+
+    var html = '<div class="page-head"><div><h2>Justificativos</h2><p>Atestados médicos e comprovativos de dispensa.</p></div>'+
+      '<button class="btn btn-primary" id="jf-upload-btn">+ Anexar ficheiro</button></div>';
+
+    html += '<div class="panel"><div class="panel-body pad">';
+    if(mine.length===0){
+      html += emptyState('paperclip','Ainda não há justificativos','Anexa atestados médicos e outros comprovativos — podes associá-los a um pedido de baixa específico.');
+    } else {
+      mine.forEach(function(j){
+        var leave = j.leaveId ? myBaixas.find(function(l){return l.id===j.leaveId;}) : null;
+        html += '<div class="activity-item"><div class="activity-icon">'+icon('paperclip')+'</div><div style="flex:1;min-width:0;">'+
+          '<div class="activity-head"><span class="activity-type">'+esc(j.filename)+'</span><span class="activity-meta">'+fmtDateTime(j.createdAt)+' · '+formatFileSize(j.size)+'</span></div>'+
+          (leave ? '<div class="status-detail" style="margin-top:2px;">Baixa · '+fmt(leave.start)+' – '+fmt(leave.end)+'</div>' : '')+
+          '<div class="activity-badges"><a class="btn btn-ghost btn-sm" href="/api/justificativos/'+j.id+'/file" target="_blank" rel="noopener">Ver / descarregar</a></div>'+
+          '</div><button class="activity-remove" data-justificativo-remove="'+j.id+'" title="Remover">✕</button></div>';
+      });
+    }
+    html += '</div></div>';
+    return html;
+  }
+
+  function openJustificativoUploadModal(){
+    var me = state.me;
+    var myBaixas = state.leaves.filter(function(l){return l.employeeId===me.id && l.type==='baixa';});
+    var leaveOptions = '<option value="">Nenhum em particular</option>'+myBaixas.map(function(l){
+      return '<option value="'+l.id+'">Baixa · '+fmt(l.start)+' – '+fmt(l.end)+'</option>';
+    }).join('');
+    var m = openModal(
+      '<h3>Anexar justificativo</h3><p class="modal-sub">PDF ou imagem, até 5MB.</p>'+
+      '<div class="form-error" id="jf-err"></div>'+
+      '<div class="field"><label>Ficheiro</label><input type="file" id="f-jf-file" accept="application/pdf,image/*"></div>'+
+      (myBaixas.length ? '<div class="field"><label>Associar a um pedido de baixa (opcional)</label><select id="f-jf-leave">'+leaveOptions+'</select></div>' : '')+
+      '<div class="modal-actions"><button class="btn btn-ghost" id="jf-cancel">Cancelar</button><button class="btn btn-primary" id="jf-save">Anexar</button></div>'
+    );
+    m.querySelector('#jf-cancel').addEventListener('click', closeModal);
+    m.querySelector('#jf-save').addEventListener('click', async function(){
+      var fileInput = document.getElementById('f-jf-file');
+      var errEl = document.getElementById('jf-err');
+      var file = fileInput.files && fileInput.files[0];
+      if(!file){ errEl.textContent='Escolhe um ficheiro.'; errEl.style.display='block'; return; }
+      if(file.size > 5*1024*1024){ errEl.textContent='O ficheiro tem de ter menos de 5MB.'; errEl.style.display='block'; return; }
+      try{
+        var dataUrl = await readFileAsDataURL(file);
+        var leaveSel = document.getElementById('f-jf-leave');
+        await api('justificativos', {method:'POST', body: JSON.stringify({
+          filename: file.name, contentType: file.type||'application/octet-stream', data: dataUrl,
+          leaveId: leaveSel ? (leaveSel.value||null) : null
+        })});
+        closeModal(); await loadState();
+        showToast('Justificativo anexado.');
+      }catch(e){ errEl.textContent = e.message || 'Não foi possível anexar o ficheiro.'; errEl.style.display='block'; }
+    });
+  }
+
+  function wireJustificativos(){
+    var uploadBtn = document.getElementById('jf-upload-btn');
+    if(uploadBtn) uploadBtn.addEventListener('click', openJustificativoUploadModal);
+    document.querySelectorAll('[data-justificativo-remove]').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        if(!confirm('Remover este justificativo?')) return;
+        try{ await api('justificativos/'+btn.getAttribute('data-justificativo-remove'), {method:'DELETE'}); await loadState(); }
+        catch(e){ showToast(e.message); }
+      });
+    });
   }
 
   function viewHome(){

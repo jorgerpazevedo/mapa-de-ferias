@@ -1,7 +1,7 @@
 import {
   json, parseCookies, sessionCookie, clearSessionCookie, createSession, currentEmployee,
   hashPassword, verifyPassword, randomHex, publicEmployee, publicLeave, publicActivity,
-  publicAnnouncement, publicMessage,
+  publicAnnouncement, publicMessage, publicJustificativo,
   businessDays, calendarDays, rangesOverlap, uid,
 } from '../_lib.js';
 
@@ -77,6 +77,10 @@ async function handleState(request, env, me) {
       leaves: leaveRows.results.map((l) => publicLeave(l, nameById[l.employee_id], l.responded_by ? nameById[l.responded_by] : null)),
       announcements,
       messages: msgRows.results.map((m) => publicMessage(m, m.employee_name, m.responder_name)),
+      justificativos: (await env.DB.prepare(
+        `SELECT j.id, j.employee_id, j.leave_id, j.filename, j.content_type, j.size, j.created_at, e.name AS employee_name
+         FROM justificativos j LEFT JOIN employees e ON e.id = j.employee_id ORDER BY j.created_at DESC`
+      ).all()).results.map((j) => publicJustificativo(j, j.employee_name)),
     });
   }
   const leaveRows = await env.DB.prepare(
@@ -85,10 +89,14 @@ async function handleState(request, env, me) {
   const msgRows = await env.DB.prepare(
     `SELECT m.*, r.name AS responder_name FROM messages m LEFT JOIN employees r ON r.id = m.responded_by WHERE m.employee_id = ? ORDER BY m.created_at DESC`
   ).bind(me.id).all();
+  const justRows = await env.DB.prepare(
+    `SELECT id, employee_id, leave_id, filename, content_type, size, created_at FROM justificativos WHERE employee_id = ? ORDER BY created_at DESC`
+  ).bind(me.id).all();
   return json({
     role: 'colaborador',
     me: { ...publicEmployee(me), balances: await computeBalances(env.DB, me.id) },
     leaves: leaveRows.results.map((l) => publicLeave(l, me.name, l.responder_name)),
+    justificativos: justRows.results.map((j) => publicJustificativo(j, me.name)),
     announcements,
     messages: msgRows.results.map((m) => publicMessage(m, me.name, m.responder_name)),
   });
@@ -368,6 +376,60 @@ async function handleDeleteMessage(request, env, me, id) {
   return json({ ok: true });
 }
 
+const MAX_JUSTIFICATIVO_LENGTH = 7000000; // ~5MB raw after base64 overhead
+
+function base64ToBytes(dataUrl) {
+  const comma = dataUrl.indexOf(',');
+  const b64 = comma === -1 ? dataUrl : dataUrl.slice(comma + 1);
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+async function handleCreateJustificativo(request, env, me) {
+  const body = await request.json().catch(() => ({}));
+  const filename = (body.filename || 'ficheiro').trim().slice(0, 200);
+  const contentType = (body.contentType || 'application/octet-stream').slice(0, 100);
+  const data = body.data || '';
+  if (!data || typeof data !== 'string' || !data.startsWith('data:') || data.length > MAX_JUSTIFICATIVO_LENGTH) {
+    return json({ error: 'Ficheiro inválido ou demasiado grande (máx. ~5MB).' }, { status: 400 });
+  }
+  let leaveId = body.leaveId || null;
+  if (leaveId) {
+    const lv = await env.DB.prepare('SELECT id FROM leaves WHERE id = ? AND employee_id = ?').bind(leaveId, me.id).first();
+    if (!lv) leaveId = null;
+  }
+  const id = uid('j');
+  await env.DB.prepare(
+    `INSERT INTO justificativos (id, employee_id, leave_id, filename, content_type, size, data, uploaded_by, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(id, me.id, leaveId, filename, contentType, Math.round(data.length * 0.75), data, me.id, new Date().toISOString()).run();
+  return json({ ok: true, id });
+}
+
+async function handleDownloadJustificativo(request, env, me, id) {
+  const row = await env.DB.prepare('SELECT * FROM justificativos WHERE id = ?').bind(id).first();
+  if (!row) return json({ error: 'Ficheiro não encontrado.' }, { status: 404 });
+  if (me.role !== 'gestor' && row.employee_id !== me.id) return json({ error: 'Sem permissão.' }, { status: 403 });
+  const bytes = base64ToBytes(row.data);
+  return new Response(bytes, {
+    headers: {
+      'Content-Type': row.content_type,
+      'Content-Disposition': 'inline; filename="' + row.filename.replace(/"/g, '') + '"',
+      'Cache-Control': 'private, max-age=0, no-store',
+    },
+  });
+}
+
+async function handleDeleteJustificativo(request, env, me, id) {
+  const row = await env.DB.prepare('SELECT * FROM justificativos WHERE id = ?').bind(id).first();
+  if (!row) return json({ error: 'Ficheiro não encontrado.' }, { status: 404 });
+  if (me.role !== 'gestor' && row.employee_id !== me.id) return json({ error: 'Sem permissão.' }, { status: 403 });
+  await env.DB.prepare('DELETE FROM justificativos WHERE id = ?').bind(id).run();
+  return json({ ok: true });
+}
+
 export async function onRequest(context) {
   const { request, env, params } = context;
   const segments = Array.isArray(params.path) ? params.path : [];
@@ -402,6 +464,9 @@ export async function onRequest(context) {
     if (segments[0] === 'messages' && segments.length === 1 && method === 'POST') return await handleCreateMessage(request, env, me);
     if (segments[0] === 'messages' && segments[2] === 'respond' && method === 'POST') return await handleRespondMessage(request, env, me, segments[1]);
     if (segments[0] === 'messages' && segments.length === 2 && method === 'DELETE') return await handleDeleteMessage(request, env, me, segments[1]);
+    if (segments[0] === 'justificativos' && segments.length === 1 && method === 'POST') return await handleCreateJustificativo(request, env, me);
+    if (segments[0] === 'justificativos' && segments[2] === 'file' && method === 'GET') return await handleDownloadJustificativo(request, env, me, segments[1]);
+    if (segments[0] === 'justificativos' && segments.length === 2 && method === 'DELETE') return await handleDeleteJustificativo(request, env, me, segments[1]);
 
     return json({ error: 'Rota não encontrada.' }, { status: 404 });
   } catch (err) {

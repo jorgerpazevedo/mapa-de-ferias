@@ -152,6 +152,19 @@ export function publicMessage(m, employeeName, respondedByName) {
   };
 }
 
+export function publicJustificativo(j, employeeName) {
+  return {
+    id: j.id,
+    employeeId: j.employee_id,
+    employeeName: employeeName || null,
+    leaveId: j.leave_id,
+    filename: j.filename,
+    contentType: j.content_type,
+    size: j.size,
+    createdAt: j.created_at,
+  };
+}
+
 export function publicLeave(l, employeeName, respondedByName) {
   return {
     id: l.id,
