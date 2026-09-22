@@ -30,11 +30,11 @@ async function handleLogin(request, env) {
   const body = await request.json().catch(() => ({}));
   const username = (body.username || '').trim();
   const password = body.password || '';
-  if (!username || !password) return json({ error: 'Utilizador e palavra-passe são obrigatórios.' }, { status: 400 });
+  if (!username || !password) return json({ error: 'Username and password are required.' }, { status: 400 });
 
   const emp = await env.DB.prepare('SELECT * FROM employees WHERE username = ?').bind(username).first();
   if (!emp || !(await verifyPassword(password, emp.password_salt, emp.password_hash))) {
-    return json({ error: 'Utilizador ou palavra-passe incorretos.' }, { status: 401 });
+    return json({ error: 'Incorrect username or password.' }, { status: 401 });
   }
   const { token, maxAge } = await createSession(env.DB, emp.id);
   return json({ ok: true, me: publicEmployee(emp) }, { headers: { 'Set-Cookie': sessionCookie(token, maxAge) } });
@@ -106,21 +106,21 @@ async function handleCreateLeave(request, env, me) {
   const body = await request.json().catch(() => ({}));
   const targetId = me.role === 'gestor' && body.employeeId ? body.employeeId : me.id;
   const target = targetId === me.id ? me : await env.DB.prepare('SELECT * FROM employees WHERE id = ?').bind(targetId).first();
-  if (!target) return json({ error: 'Colaborador não encontrado.' }, { status: 404 });
+  if (!target) return json({ error: 'Employee not found.' }, { status: 404 });
 
   const type = body.type === 'baixa' ? 'baixa' : 'ferias';
   const start = body.start, end = body.end;
   if (!start || !end || new Date(end) < new Date(start)) {
-    return json({ error: 'Intervalo de datas inválido.' }, { status: 400 });
+    return json({ error: 'Invalid date range.' }, { status: 400 });
   }
   const days = type === 'ferias' ? businessDays(start, end) : calendarDays(start, end);
-  if (days <= 0) return json({ error: 'O intervalo escolhido não tem dias úteis.' }, { status: 400 });
+  if (days <= 0) return json({ error: 'The chosen range has no business days.' }, { status: 400 });
 
   const existing = await env.DB.prepare(
     `SELECT start_date, end_date FROM leaves WHERE employee_id = ? AND status != 'rejeitado'`
   ).bind(target.id).all();
   if (existing.results.some((l) => rangesOverlap(start, end, l.start_date, l.end_date))) {
-    return json({ error: 'Já existe uma ausência marcada ou pendente nesse período.' }, { status: 409 });
+    return json({ error: 'There is already a scheduled or pending absence in that period.' }, { status: 409 });
   }
 
   if (type === 'ferias') {
@@ -129,7 +129,7 @@ async function handleCreateLeave(request, env, me) {
       `SELECT COALESCE(SUM(days),0) AS d FROM leaves WHERE employee_id = ? AND type = 'ferias' AND status IN ('aprovado','pendente') AND substr(start_date,1,4) = ?`
     ).bind(target.id, String(year)).first();
     if ((usedRow.d || 0) + days > target.vacation_days_total) {
-      return json({ error: `Saldo insuficiente: restam ${target.vacation_days_total - (usedRow.d || 0)} dias de férias.` }, { status: 409 });
+      return json({ error: `Insufficient balance: ${target.vacation_days_total - (usedRow.d || 0)} vacation days remaining.` }, { status: 409 });
     }
   }
 
@@ -145,11 +145,11 @@ async function handleCreateLeave(request, env, me) {
 }
 
 async function handleRespondLeave(request, env, me, leaveId) {
-  if (me.role !== 'gestor') return json({ error: 'Só o gestor pode aprovar ou rejeitar pedidos.' }, { status: 403 });
+  if (me.role !== 'gestor') return json({ error: 'Only a manager can approve or reject requests.' }, { status: 403 });
   const body = await request.json().catch(() => ({}));
   const status = ['pendente', 'aprovado', 'rejeitado'].includes(body.status) ? body.status : 'aprovado';
   const lv = await env.DB.prepare('SELECT * FROM leaves WHERE id = ?').bind(leaveId).first();
-  if (!lv) return json({ error: 'Pedido não encontrado.' }, { status: 404 });
+  if (!lv) return json({ error: 'Request not found.' }, { status: 404 });
   if (status === 'pendente') {
     await env.DB.prepare('UPDATE leaves SET status = ?, responded_by = NULL, responded_at = NULL WHERE id = ?').bind(status, leaveId).run();
   } else {
@@ -161,25 +161,25 @@ async function handleRespondLeave(request, env, me, leaveId) {
 
 async function handleCancelLeave(request, env, me, leaveId) {
   const lv = await env.DB.prepare('SELECT * FROM leaves WHERE id = ?').bind(leaveId).first();
-  if (!lv) return json({ error: 'Pedido não encontrado.' }, { status: 404 });
+  if (!lv) return json({ error: 'Request not found.' }, { status: 404 });
   const today = new Date().toISOString().slice(0, 10);
   const isOwner = lv.employee_id === me.id;
   const canCancel = me.role === 'gestor' || (isOwner && (lv.status === 'pendente' || lv.start_date >= today));
-  if (!canCancel) return json({ error: 'Não podes cancelar esta ausência.' }, { status: 403 });
+  if (!canCancel) return json({ error: 'You cannot cancel this time off.' }, { status: 403 });
   await env.DB.prepare('DELETE FROM leaves WHERE id = ?').bind(leaveId).run();
   return json({ ok: true });
 }
 
 async function handleCreateEmployee(request, env, me) {
-  if (me.role !== 'gestor') return json({ error: 'Só o gestor pode gerir colaboradores.' }, { status: 403 });
+  if (me.role !== 'gestor') return json({ error: 'Only a manager can manage employees.' }, { status: 403 });
   const body = await request.json().catch(() => ({}));
   const name = (body.name || '').trim();
   const username = (body.username || '').trim();
   const password = body.password || '';
-  if (!name || !username || !password) return json({ error: 'Preenche nome, utilizador e palavra-passe.' }, { status: 400 });
+  if (!name || !username || !password) return json({ error: 'Fill in the name, username and password.' }, { status: 400 });
 
   const clash = await env.DB.prepare('SELECT id FROM employees WHERE username = ?').bind(username).first();
-  if (clash) return json({ error: 'Já existe um colaborador com esse utilizador.' }, { status: 409 });
+  if (clash) return json({ error: 'An employee with that username already exists.' }, { status: 409 });
 
   const salt = randomHex(16);
   const hash = await hashPassword(password, salt);
@@ -214,16 +214,16 @@ function normalizeTags(tags) {
 }
 
 async function handleUpdateEmployee(request, env, me, empId) {
-  if (me.role !== 'gestor') return json({ error: 'Só o gestor pode gerir colaboradores.' }, { status: 403 });
+  if (me.role !== 'gestor') return json({ error: 'Only a manager can manage employees.' }, { status: 403 });
   const target = await env.DB.prepare('SELECT * FROM employees WHERE id = ?').bind(empId).first();
-  if (!target) return json({ error: 'Colaborador não encontrado.' }, { status: 404 });
+  if (!target) return json({ error: 'Employee not found.' }, { status: 404 });
   const body = await request.json().catch(() => ({}));
   const name = (body.name || '').trim();
   const username = (body.username || '').trim();
-  if (!name || !username) return json({ error: 'Preenche nome e utilizador.' }, { status: 400 });
+  if (!name || !username) return json({ error: 'Fill in the name and username.' }, { status: 400 });
 
   const clash = await env.DB.prepare('SELECT id FROM employees WHERE username = ? AND id != ?').bind(username, empId).first();
-  if (clash) return json({ error: 'Já existe um colaborador com esse utilizador.' }, { status: 409 });
+  if (clash) return json({ error: 'An employee with that username already exists.' }, { status: 409 });
 
   let passwordHash = target.password_hash, passwordSalt = target.password_salt;
   if (body.password) {
@@ -250,8 +250,8 @@ async function handleUpdateEmployee(request, env, me, empId) {
 }
 
 async function handleDeleteEmployee(request, env, me, empId) {
-  if (me.role !== 'gestor') return json({ error: 'Só o gestor pode gerir colaboradores.' }, { status: 403 });
-  if (empId === me.id) return json({ error: 'Não podes remover a tua própria conta.' }, { status: 400 });
+  if (me.role !== 'gestor') return json({ error: 'Only a manager can manage employees.' }, { status: 403 });
+  if (empId === me.id) return json({ error: 'You cannot remove your own account.' }, { status: 400 });
   await env.DB.prepare('DELETE FROM employees WHERE id = ?').bind(empId).run();
   return json({ ok: true });
 }
@@ -270,7 +270,7 @@ async function handleUpdatePhoto(request, env, id) {
   const body = await request.json().catch(() => ({}));
   const photo = body.photo || null;
   if (photo && (typeof photo !== 'string' || !photo.startsWith('data:image/') || photo.length > MAX_PHOTO_LENGTH)) {
-    return json({ error: 'Imagem inválida ou demasiado grande.' }, { status: 400 });
+    return json({ error: 'Invalid image or file too large.' }, { status: 400 });
   }
   await env.DB.prepare('UPDATE employees SET photo = ? WHERE id = ?').bind(photo, id).run();
   return json({ ok: true });
@@ -281,20 +281,20 @@ const ACTIVITY_STATUSES = ['concluido', 'agendado', 'pendente'];
 const ACTIVITY_IMPACTS = ['positivo', 'neutro', 'atencao'];
 
 async function handleListActivities(request, env, me, empId) {
-  if (me.role !== 'gestor') return json({ error: 'Só o gestor pode ver o histórico de interações.' }, { status: 403 });
+  if (me.role !== 'gestor') return json({ error: 'Only a manager can view the interaction history.' }, { status: 403 });
   const emp = await env.DB.prepare('SELECT name FROM employees WHERE id = ?').bind(empId).first();
-  if (!emp) return json({ error: 'Colaborador não encontrado.' }, { status: 404 });
+  if (!emp) return json({ error: 'Employee not found.' }, { status: 404 });
   const rows = await env.DB.prepare('SELECT * FROM activities WHERE employee_id = ? ORDER BY created_at DESC').bind(empId).all();
   return json({ activities: rows.results.map((a) => publicActivity(a, emp.name)) });
 }
 
 async function handleCreateActivity(request, env, me, empId) {
-  if (me.role !== 'gestor') return json({ error: 'Só o gestor pode registar interações.' }, { status: 403 });
+  if (me.role !== 'gestor') return json({ error: 'Only a manager can log interactions.' }, { status: 403 });
   const emp = await env.DB.prepare('SELECT name FROM employees WHERE id = ?').bind(empId).first();
-  if (!emp) return json({ error: 'Colaborador não encontrado.' }, { status: 404 });
+  if (!emp) return json({ error: 'Employee not found.' }, { status: 404 });
   const body = await request.json().catch(() => ({}));
   const details = (body.details || '').trim();
-  if (!details) return json({ error: 'Descreve o que aconteceu.' }, { status: 400 });
+  if (!details) return json({ error: 'Describe what happened.' }, { status: 400 });
   const id = uid('a');
   const row = {
     id,
@@ -313,13 +313,13 @@ async function handleCreateActivity(request, env, me, empId) {
 }
 
 async function handleDeleteActivity(request, env, me, activityId) {
-  if (me.role !== 'gestor') return json({ error: 'Só o gestor pode remover interações.' }, { status: 403 });
+  if (me.role !== 'gestor') return json({ error: 'Only a manager can remove interactions.' }, { status: 403 });
   await env.DB.prepare('DELETE FROM activities WHERE id = ?').bind(activityId).run();
   return json({ ok: true });
 }
 
 async function handleUpdateNotes(request, env, me, empId) {
-  if (me.role !== 'gestor') return json({ error: 'Só o gestor pode editar notas.' }, { status: 403 });
+  if (me.role !== 'gestor') return json({ error: 'Only a manager can edit notes.' }, { status: 403 });
   const body = await request.json().catch(() => ({}));
   const notes = (body.notes || '').trim() || null;
   await env.DB.prepare('UPDATE employees SET notes = ? WHERE id = ?').bind(notes, empId).run();
@@ -327,11 +327,11 @@ async function handleUpdateNotes(request, env, me, empId) {
 }
 
 async function handleCreateAnnouncement(request, env, me) {
-  if (me.role !== 'gestor') return json({ error: 'Só o gestor pode publicar comunicados.' }, { status: 403 });
+  if (me.role !== 'gestor') return json({ error: 'Only a manager can publish announcements.' }, { status: 403 });
   const body = await request.json().catch(() => ({}));
   const title = (body.title || '').trim();
   const abody = (body.body || '').trim();
-  if (!title || !abody) return json({ error: 'Preenche o título e a mensagem.' }, { status: 400 });
+  if (!title || !abody) return json({ error: 'Fill in the title and message.' }, { status: 400 });
   const id = uid('an');
   await env.DB.prepare('INSERT INTO announcements (id, title, body, created_by, created_at) VALUES (?, ?, ?, ?, ?)')
     .bind(id, title, abody, me.id, new Date().toISOString()).run();
@@ -339,7 +339,7 @@ async function handleCreateAnnouncement(request, env, me) {
 }
 
 async function handleDeleteAnnouncement(request, env, me, id) {
-  if (me.role !== 'gestor') return json({ error: 'Só o gestor pode remover comunicados.' }, { status: 403 });
+  if (me.role !== 'gestor') return json({ error: 'Only a manager can remove announcements.' }, { status: 403 });
   await env.DB.prepare('DELETE FROM announcements WHERE id = ?').bind(id).run();
   return json({ ok: true });
 }
@@ -348,7 +348,7 @@ async function handleCreateMessage(request, env, me) {
   const body = await request.json().catch(() => ({}));
   const subject = (body.subject || '').trim();
   const mbody = (body.body || '').trim();
-  if (!subject || !mbody) return json({ error: 'Preenche o assunto e a mensagem.' }, { status: 400 });
+  if (!subject || !mbody) return json({ error: 'Fill in the subject and message.' }, { status: 400 });
   const id = uid('m');
   await env.DB.prepare('INSERT INTO messages (id, employee_id, subject, body, status, created_at) VALUES (?, ?, ?, ?, ?, ?)')
     .bind(id, me.id, subject, mbody, 'aberto', new Date().toISOString()).run();
@@ -356,12 +356,12 @@ async function handleCreateMessage(request, env, me) {
 }
 
 async function handleRespondMessage(request, env, me, id) {
-  if (me.role !== 'gestor') return json({ error: 'Só o gestor pode responder.' }, { status: 403 });
+  if (me.role !== 'gestor') return json({ error: 'Only a manager can reply.' }, { status: 403 });
   const body = await request.json().catch(() => ({}));
   const response = (body.response || '').trim();
-  if (!response) return json({ error: 'Escreve uma resposta.' }, { status: 400 });
+  if (!response) return json({ error: 'Write a reply.' }, { status: 400 });
   const msg = await env.DB.prepare('SELECT * FROM messages WHERE id = ?').bind(id).first();
-  if (!msg) return json({ error: 'Pedido não encontrado.' }, { status: 404 });
+  if (!msg) return json({ error: 'Request not found.' }, { status: 404 });
   await env.DB.prepare('UPDATE messages SET status = ?, response = ?, responded_by = ?, responded_at = ? WHERE id = ?')
     .bind('respondido', response, me.id, new Date().toISOString(), id).run();
   return json({ ok: true });
@@ -369,9 +369,9 @@ async function handleRespondMessage(request, env, me, id) {
 
 async function handleDeleteMessage(request, env, me, id) {
   const msg = await env.DB.prepare('SELECT * FROM messages WHERE id = ?').bind(id).first();
-  if (!msg) return json({ error: 'Pedido não encontrado.' }, { status: 404 });
+  if (!msg) return json({ error: 'Request not found.' }, { status: 404 });
   const canDelete = me.role === 'gestor' || (msg.employee_id === me.id && msg.status === 'aberto');
-  if (!canDelete) return json({ error: 'Não podes remover este pedido.' }, { status: 403 });
+  if (!canDelete) return json({ error: 'You cannot remove this request.' }, { status: 403 });
   await env.DB.prepare('DELETE FROM messages WHERE id = ?').bind(id).run();
   return json({ ok: true });
 }
@@ -389,11 +389,11 @@ function base64ToBytes(dataUrl) {
 
 async function handleCreateJustificativo(request, env, me) {
   const body = await request.json().catch(() => ({}));
-  const filename = (body.filename || 'ficheiro').trim().slice(0, 200);
+  const filename = (body.filename || 'file').trim().slice(0, 200);
   const contentType = (body.contentType || 'application/octet-stream').slice(0, 100);
   const data = body.data || '';
   if (!data || typeof data !== 'string' || !data.startsWith('data:') || data.length > MAX_JUSTIFICATIVO_LENGTH) {
-    return json({ error: 'Ficheiro inválido ou demasiado grande (máx. ~5MB).' }, { status: 400 });
+    return json({ error: 'Invalid file or file too large (max ~5MB).' }, { status: 400 });
   }
   let leaveId = body.leaveId || null;
   if (leaveId) {
@@ -410,8 +410,8 @@ async function handleCreateJustificativo(request, env, me) {
 
 async function handleDownloadJustificativo(request, env, me, id) {
   const row = await env.DB.prepare('SELECT * FROM justificativos WHERE id = ?').bind(id).first();
-  if (!row) return json({ error: 'Ficheiro não encontrado.' }, { status: 404 });
-  if (me.role !== 'gestor' && row.employee_id !== me.id) return json({ error: 'Sem permissão.' }, { status: 403 });
+  if (!row) return json({ error: 'File not found.' }, { status: 404 });
+  if (me.role !== 'gestor' && row.employee_id !== me.id) return json({ error: 'Permission denied.' }, { status: 403 });
   const bytes = base64ToBytes(row.data);
   return new Response(bytes, {
     headers: {
@@ -424,8 +424,8 @@ async function handleDownloadJustificativo(request, env, me, id) {
 
 async function handleDeleteJustificativo(request, env, me, id) {
   const row = await env.DB.prepare('SELECT * FROM justificativos WHERE id = ?').bind(id).first();
-  if (!row) return json({ error: 'Ficheiro não encontrado.' }, { status: 404 });
-  if (me.role !== 'gestor' && row.employee_id !== me.id) return json({ error: 'Sem permissão.' }, { status: 403 });
+  if (!row) return json({ error: 'File not found.' }, { status: 404 });
+  if (me.role !== 'gestor' && row.employee_id !== me.id) return json({ error: 'Permission denied.' }, { status: 403 });
   await env.DB.prepare('DELETE FROM justificativos WHERE id = ?').bind(id).run();
   return json({ ok: true });
 }
@@ -440,7 +440,7 @@ export async function onRequest(context) {
     if (segments[0] === 'logout' && method === 'POST') return await handleLogout(request, env);
 
     const me = await currentEmployee(request, env);
-    if (!me) return json({ error: 'Sessão inválida ou expirada.' }, { status: 401 });
+    if (!me) return json({ error: 'Invalid or expired session.' }, { status: 401 });
 
     if (segments[0] === 'state' && method === 'GET') return await handleState(request, env, me);
     if (segments[0] === 'leaves' && segments.length === 1 && method === 'POST') return await handleCreateLeave(request, env, me);
@@ -452,7 +452,7 @@ export async function onRequest(context) {
     if (segments[0] === 'me' && segments[1] === 'contact' && method === 'PUT') return await handleUpdateContact(request, env, me);
     if (segments[0] === 'me' && segments[1] === 'photo' && method === 'PUT') return await handleUpdatePhoto(request, env, me.id);
     if (segments[0] === 'employees' && segments[2] === 'photo' && method === 'PUT') {
-      if (me.role !== 'gestor') return json({ error: 'Só o gestor pode alterar a foto de outro colaborador.' }, { status: 403 });
+      if (me.role !== 'gestor') return json({ error: 'Only a manager can change another employee\'s photo.' }, { status: 403 });
       return await handleUpdatePhoto(request, env, segments[1]);
     }
     if (segments[0] === 'employees' && segments[2] === 'notes' && method === 'PUT') return await handleUpdateNotes(request, env, me, segments[1]);
@@ -468,8 +468,8 @@ export async function onRequest(context) {
     if (segments[0] === 'justificativos' && segments[2] === 'file' && method === 'GET') return await handleDownloadJustificativo(request, env, me, segments[1]);
     if (segments[0] === 'justificativos' && segments.length === 2 && method === 'DELETE') return await handleDeleteJustificativo(request, env, me, segments[1]);
 
-    return json({ error: 'Rota não encontrada.' }, { status: 404 });
+    return json({ error: 'Route not found.' }, { status: 404 });
   } catch (err) {
-    return json({ error: 'Erro interno: ' + (err && err.message ? err.message : String(err)) }, { status: 500 });
+    return json({ error: 'Internal error: ' + (err && err.message ? err.message : String(err)) }, { status: 500 });
   }
 }

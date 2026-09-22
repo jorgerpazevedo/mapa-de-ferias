@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-PT">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -347,23 +347,23 @@
     <div class="login-card">
       <div class="login-mark">🌍</div>
       <h1>HR-PCT</h1>
-      <p class="login-sub">Inicia sessão para consultar o teu saldo ou marcar ausências.</p>
+      <p class="login-sub">Sign in to check your balance or request time off.</p>
       <div class="login-error" id="login-error"></div>
       <form id="login-form">
-        <div class="field"><label for="login-user">Utilizador</label><input id="login-user" type="text" autocomplete="username" required></div>
-        <div class="field"><label for="login-pass">Palavra-passe</label><input id="login-pass" type="password" autocomplete="current-password" required></div>
-        <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+        <div class="field"><label for="login-user">Username</label><input id="login-user" type="text" autocomplete="username" required></div>
+        <div class="field"><label for="login-pass">Password</label><input id="login-pass" type="password" autocomplete="current-password" required></div>
+        <button type="submit" class="btn btn-primary btn-block">Sign in</button>
       </form>
-      <div class="login-hint">Administrador: <strong class="mono">admin</strong> / <strong class="mono">admin</strong> · Funcionário (exemplo): <strong class="mono">user</strong> / <strong class="mono">user</strong></div>
+      <div class="login-hint">Administrator: <strong class="mono">admin</strong> / <strong class="mono">admin</strong> · Employee (example): <strong class="mono">user</strong> / <strong class="mono">user</strong></div>
     </div>
   </div>
 
   <div id="app-view" class="hidden">
     <div class="topbar">
-      <button class="hamburger-btn" id="hamburger-btn" aria-label="Abrir menu"></button>
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Open menu"></button>
       <div class="brand"><div class="brand-mark">🌍</div><div class="brand-name">HR-PCT</div></div>
       <div class="topbar-spacer"></div>
-      <button class="topbar-avatar" id="topbar-avatar" title="Abrir menu">—</button>
+      <button class="topbar-avatar" id="topbar-avatar" title="Open menu">—</button>
     </div>
 
     <div class="drawer-backdrop" id="drawer-backdrop"></div>
@@ -371,20 +371,20 @@
       <div class="drawer-head">
         <div class="drawer-head-top">
           <div class="brand"><div class="brand-mark">🌍</div><div class="brand-name">HR-PCT</div></div>
-          <button class="drawer-close" id="drawer-close" aria-label="Fechar menu"></button>
+          <button class="drawer-close" id="drawer-close" aria-label="Close menu"></button>
         </div>
         <div class="drawer-profile">
           <div class="drawer-avatar" id="drawer-avatar">—</div>
           <div>
             <div class="drawer-profile-name" id="drawer-name">—</div>
             <div class="drawer-profile-role" id="drawer-role">—</div>
-            <div class="drawer-balance-chip" id="drawer-balance">— dias restantes</div>
+            <div class="drawer-balance-chip" id="drawer-balance">— days remaining</div>
           </div>
         </div>
       </div>
       <nav class="drawer-body" id="drawer-body"></nav>
       <div class="drawer-foot">
-        <button class="btn btn-ghost btn-block btn-sm" id="logout-btn">Sair</button>
+        <button class="btn btn-ghost btn-block btn-sm" id="logout-btn">Log out</button>
       </div>
     </div>
 
@@ -437,9 +437,9 @@
     return new Promise(function(resolve, reject){
       var img = new Image();
       var reader = new FileReader();
-      reader.onerror = function(){ reject(new Error('Não foi possível ler o ficheiro.')); };
+      reader.onerror = function(){ reject(new Error('Could not read the file.')); };
       reader.onload = function(){
-        img.onerror = function(){ reject(new Error('Ficheiro de imagem inválido.')); };
+        img.onerror = function(){ reject(new Error('Invalid image file.')); };
         img.onload = function(){
           var size = 200;
           var canvas = document.createElement('canvas');
@@ -461,8 +461,8 @@
       var isSelf = state.me.id===empId;
       await api(isSelf ? 'me/photo' : 'employees/'+empId+'/photo', {method:'PUT', body: JSON.stringify({photo: dataUrl})});
       await loadState();
-      showToast('Foto atualizada.');
-    }catch(e){ showToast(e.message || 'Não foi possível carregar a foto.'); }
+      showToast('Photo updated.');
+    }catch(e){ showToast(e.message || 'Could not upload the photo.'); }
   }
 
   async function api(path, opts){
@@ -471,7 +471,7 @@
     var res = await fetch('/api/'+path, Object.assign({}, opts, {headers: headers}));
     var data = {};
     try { data = await res.json(); } catch(e){}
-    if(!res.ok) throw new Error(data.error || ('Erro '+res.status));
+    if(!res.ok) throw new Error(data.error || ('Error '+res.status));
     return data;
   }
 
@@ -496,8 +496,8 @@
       '</svg><div class="ring-label">'+Math.round(pct)+'%</div></div>';
   }
 
-  var MONTH_NAMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  var DOW_NAMES = ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
+  var MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var DOW_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   function isoFromYMD(y,m,d){ function pad(n){return (n<10?'0':'')+n;} return y+'-'+pad(m+1)+'-'+pad(d); }
   function leavesOnDate(dateIso, employeeId){
     return state.leaves.filter(function(l){
@@ -513,7 +513,7 @@
     var daysInMonth = new Date(y,m+1,0).getDate();
     var todayStr = todayIso();
 
-    var html = '<div class="panel"><div class="panel-head"><h3>Calendário</h3><div class="cal-nav"><button type="button" id="cal-prev">‹</button><button type="button" id="cal-next">›</button></div></div><div class="panel-body pad">';
+    var html = '<div class="panel"><div class="panel-head"><h3>Calendar</h3><div class="cal-nav"><button type="button" id="cal-prev">‹</button><button type="button" id="cal-next">›</button></div></div><div class="panel-body pad">';
     html += '<div class="cal-month">'+MONTH_NAMES[m]+' '+y+'</div><div class="cal-grid">';
     DOW_NAMES.forEach(function(d){ html += '<div class="cal-dow">'+d+'</div>'; });
     for(var i=0;i<startDow;i++) html += '<div class="cal-day empty"></div>';
@@ -531,26 +531,26 @@
       var titleAttr = dayLeaves.length ? esc(dayLeaves.map(function(l){return l.employeeName;}).join(', ')) : '';
       html += '<div class="'+cls+'" title="'+titleAttr+'">'+d+'</div>';
     }
-    html += '</div><div class="cal-legend"><span><span class="cal-dot" style="background:var(--accent)"></span>Férias</span><span><span class="cal-dot" style="background:var(--moss)"></span>Baixa</span><span><span class="cal-dot" style="background:var(--pending)"></span>Pendente</span></div></div></div>';
+    html += '</div><div class="cal-legend"><span><span class="cal-dot" style="background:var(--accent)"></span>Vacation</span><span><span class="cal-dot" style="background:var(--moss)"></span>Sick leave</span><span><span class="cal-dot" style="background:var(--pending)"></span>Pending</span></div></div></div>';
     return html;
   }
 
   var CONTRACT_TYPES = [
-    {value:'efetivo', label:'Efetivo (sem termo)'},
-    {value:'termo_certo', label:'Termo certo'},
-    {value:'termo_incerto', label:'Termo incerto'},
-    {value:'prestacao_servicos', label:'Prestação de serviços'},
-    {value:'estagio', label:'Estágio'}
+    {value:'efetivo', label:'Permanent (no term)'},
+    {value:'termo_certo', label:'Fixed-term'},
+    {value:'termo_incerto', label:'Open-ended fixed-term'},
+    {value:'prestacao_servicos', label:'Service contract'},
+    {value:'estagio', label:'Internship'}
   ];
   function contractTypeLabel(v){
     var f = CONTRACT_TYPES.find(function(c){return c.value===v;});
-    return f ? f.label : 'Efetivo (sem termo)';
+    return f ? f.label : 'Permanent (no term)';
   }
 
-  var ACTIVITY_TYPE_LABELS = {chamada:'Chamada', reuniao:'Reunião', email:'Email', evento:'Evento', nota:'Nota', outro:'Outro'};
+  var ACTIVITY_TYPE_LABELS = {chamada:'Call', reuniao:'Meeting', email:'Email', evento:'Event', nota:'Note', outro:'Other'};
   var ACTIVITY_ICONS = {chamada:'phoneCall', reuniao:'users2', email:'mail', evento:'calendar', nota:'paperclip', outro:'help'};
-  var ACTIVITY_STATUS_LABELS = {concluido:'Concluído', agendado:'Agendado', pendente:'Pendente'};
-  var ACTIVITY_IMPACT_LABELS = {positivo:'Positivo', neutro:'Neutro', atencao:'Precisa de atenção'};
+  var ACTIVITY_STATUS_LABELS = {concluido:'Completed', agendado:'Scheduled', pendente:'Pending'};
+  var ACTIVITY_IMPACT_LABELS = {positivo:'Positive', neutro:'Neutral', atencao:'Needs attention'};
   function statusPill(text){ return '<span class="chip chip-neutral">'+esc(text)+'</span>'; }
   function impactPill(impact){
     var cls = impact==='positivo' ? 'chip-aprovado' : impact==='atencao' ? 'chip-rejeitado' : 'chip-neutral';
@@ -563,24 +563,24 @@
     return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()+' '+pad(d.getHours())+':'+pad(d.getMinutes());
   }
 
-  function chipLabel(type){ return type==='ferias' ? 'Férias' : 'Baixa'; }
-  function chip(type){ return type==='ferias' ? '<span class="chip chip-ferias">Férias</span>' : '<span class="chip chip-baixa">Baixa</span>'; }
+  function chipLabel(type){ return type==='ferias' ? 'Vacation' : 'Sick leave'; }
+  function chip(type){ return type==='ferias' ? '<span class="chip chip-ferias">Vacation</span>' : '<span class="chip chip-baixa">Sick leave</span>'; }
   function statusChip(status){
-    if(status==='pendente') return '<span class="chip chip-pendente">Pendente</span>';
-    if(status==='rejeitado') return '<span class="chip chip-rejeitado">Rejeitado</span>';
-    return '<span class="chip chip-aprovado">Aprovado</span>';
+    if(status==='pendente') return '<span class="chip chip-pendente">Pending</span>';
+    if(status==='rejeitado') return '<span class="chip chip-rejeitado">Rejected</span>';
+    return '<span class="chip chip-aprovado">Approved</span>';
   }
 
   function employeeCurrentStatus(empId){
     var rows = state.leaves.filter(function(l){return l.employeeId===empId;});
     var today = todayIso();
     var pending = rows.filter(function(l){return l.status==='pendente';}).sort(function(a,b){return a.start<b.start?-1:1;})[0];
-    if(pending) return {chip:'<span class="chip chip-pendente">Pendente</span>', detail: chipLabel(pending.type)+' · '+fmt(pending.start)+' – '+fmt(pending.end)};
+    if(pending) return {chip:'<span class="chip chip-pendente">Pending</span>', detail: chipLabel(pending.type)+' · '+fmt(pending.start)+' – '+fmt(pending.end)};
     var current = rows.find(function(l){return l.status==='aprovado' && l.start<=today && today<=l.end;});
-    if(current) return {chip:'<span class="chip chip-aprovado">Em curso</span>', detail: chipLabel(current.type)+' até '+fmt(current.end)};
+    if(current) return {chip:'<span class="chip chip-aprovado">Ongoing</span>', detail: chipLabel(current.type)+' until '+fmt(current.end)};
     var future = rows.filter(function(l){return l.status==='aprovado' && l.start>today;}).sort(function(a,b){return a.start<b.start?-1:1;})[0];
-    if(future) return {chip:'<span class="chip chip-aprovado">Aprovado</span>', detail: fmt(future.start)+' – '+fmt(future.end)};
-    return {chip:'<span class="chip chip-neutral">Sem pedido ativo</span>', detail:'—'};
+    if(future) return {chip:'<span class="chip chip-aprovado">Approved</span>', detail: fmt(future.start)+' – '+fmt(future.end)};
+    return {chip:'<span class="chip chip-neutral">No active request</span>', detail:'—'};
   }
 
   function tagRow(tags){
@@ -590,10 +590,10 @@
 
   function employeeStatusBadge(e){
     var today = todayIso();
-    if(e.contractEnd && e.contractEnd<today) return '<span class="chip chip-rejeitado">Contrato terminado</span>';
+    if(e.contractEnd && e.contractEnd<today) return '<span class="chip chip-rejeitado">Contract ended</span>';
     var onLeave = state.leaves.find(function(l){return l.employeeId===e.id && l.status==='aprovado' && l.start<=today && today<=l.end;});
-    if(onLeave) return '<span class="chip chip-pendente">Em '+(onLeave.type==='ferias'?'férias':'baixa')+'</span>';
-    return '<span class="chip chip-aprovado">Ativo</span>';
+    if(onLeave) return '<span class="chip chip-pendente">On '+(onLeave.type==='ferias'?'vacation':'sick leave')+'</span>';
+    return '<span class="chip chip-aprovado">Active</span>';
   }
 
   function teamStatusPanel(){
@@ -604,13 +604,13 @@
     if(teamPage<0) teamPage = 0;
     var pageRows = filtered.slice(teamPage*TEAM_PAGE_SIZE, teamPage*TEAM_PAGE_SIZE+TEAM_PAGE_SIZE);
 
-    var html = '<div class="panel"><div class="panel-head"><h3>Colaboradores</h3>'+
+    var html = '<div class="panel"><div class="panel-head"><h3>Employees</h3>'+
       '<div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">'+
-      '<div class="search-input-wrap">'+icon('search')+'<input type="text" id="team-search-input" placeholder="Pesquisar por nome…" value="'+esc(teamSearch)+'"></div>'+
-      '<button class="btn btn-primary btn-sm" id="dash-add-emp">+ Novo colaborador</button>'+
-      '</div></div><div class="table-wrap"><table><thead><tr><th>Colaborador</th><th>Estado do pedido</th><th></th></tr></thead><tbody>';
+      '<div class="search-input-wrap">'+icon('search')+'<input type="text" id="team-search-input" placeholder="Search by name…" value="'+esc(teamSearch)+'"></div>'+
+      '<button class="btn btn-primary btn-sm" id="dash-add-emp">+ New employee</button>'+
+      '</div></div><div class="table-wrap"><table><thead><tr><th>Employee</th><th>Request status</th><th></th></tr></thead><tbody>';
     if(pageRows.length===0){
-      html += '<tr><td colspan="3"><div class="empty">Nenhum colaborador encontrado.</div></td></tr>';
+      html += '<tr><td colspan="3"><div class="empty">No employees found.</div></td></tr>';
     } else {
       pageRows.forEach(function(e){
         var st = employeeCurrentStatus(e.id);
@@ -619,12 +619,12 @@
         html += '<tr><td><div class="list-item-main">'+avatarHtml(e)+'<div><div class="li-name">'+esc(e.name)+'</div><div class="li-sub">'+esc(e.email||e.phone||'@'+e.username)+'</div></div></div></td>'+
           '<td>'+st.chip+'<div class="status-detail">'+esc(st.detail)+'</div></td>'+
           '<td><div class="row-actions">'+
-          (pendingLeave ? '<button class="btn btn-sm btn-reject" data-reject="'+pendingLeave.id+'">Rejeitar</button><button class="btn btn-sm btn-approve" data-approve="'+pendingLeave.id+'">Aprovar</button>' : '<button class="btn btn-ghost btn-sm" data-view-emp="'+e.id+'">Ver perfil</button>')+
+          (pendingLeave ? '<button class="btn btn-sm btn-reject" data-reject="'+pendingLeave.id+'">Reject</button><button class="btn btn-sm btn-approve" data-approve="'+pendingLeave.id+'">Approve</button>' : '<button class="btn btn-ghost btn-sm" data-view-emp="'+e.id+'">View profile</button>')+
           '</div></td></tr>';
       });
     }
     html += '</tbody></table></div>';
-    html += '<div class="table-foot"><span>'+(filtered.length===0?0:teamPage*TEAM_PAGE_SIZE+1)+'–'+Math.min(filtered.length, teamPage*TEAM_PAGE_SIZE+TEAM_PAGE_SIZE)+' de '+filtered.length+' colaboradores</span>'+
+    html += '<div class="table-foot"><span>'+(filtered.length===0?0:teamPage*TEAM_PAGE_SIZE+1)+'–'+Math.min(filtered.length, teamPage*TEAM_PAGE_SIZE+TEAM_PAGE_SIZE)+' of '+filtered.length+' employees</span>'+
       '<div class="pager"><button class="icon-btn" id="team-prev" '+(teamPage<=0?'disabled':'')+'>‹</button><span>'+(teamPage+1)+' / '+totalPages+'</span><button class="icon-btn" id="team-next" '+(teamPage>=totalPages-1?'disabled':'')+'>›</button></div></div>';
     html += '</div>';
     return html;
@@ -636,12 +636,12 @@
     var sUsed=b.baixa.aprovado, sPending=b.baixa.pendente, sTotal=person.sickDaysTotal, sRemain=sTotal-sUsed;
     var vPct = vTotal>0 ? (vUsed/vTotal*100) : 0;
     var sPct = sTotal>0 ? (sUsed/sTotal*100) : 0;
-    return '<div class="panel"><div class="panel-head"><h3>'+(title||'Saldo')+'</h3></div><div class="balance-card">'+
-      '<div class="balance-row"><div style="display:flex;align-items:center;gap:14px;">'+ringSvg(vPct,'accent')+'<div><div class="balance-title">Férias</div><div class="balance-sub">'+vUsed+' de '+vTotal+' dias úteis usados</div>'+(vPending>0?'<div class="pending-note">+'+vPending+' pendente'+(vPending!==1?'s':'')+' de aprovação</div>':'')+'</div></div>'+
-      '<div class="balance-figure '+(vRemain<0?'low':'')+'"'+(vRemain<0?' style="color:var(--rose)"':'')+'>'+vRemain+'<small>restam</small></div></div>'+
-      '<div class="balance-row"><div style="display:flex;align-items:center;gap:14px;">'+ringSvg(sPct,'moss')+'<div><div class="balance-title">Baixas</div><div class="balance-sub">'+sUsed+' de '+sTotal+' dias usados</div>'+(sPending>0?'<div class="pending-note">+'+sPending+' pendente'+(sPending!==1?'s':'')+' de aprovação</div>':'')+'</div></div>'+
-      '<div class="balance-figure"'+(sRemain<0?' style="color:var(--rose)"':'')+'>'+sRemain+'<small>restam</small></div></div>'+
-      '<div class="balance-row"><div><div class="balance-title">Antiguidade</div><div class="balance-sub">desde '+fmt(person.startDate)+'</div></div><div class="balance-figure">'+yearsOfService(person.startDate)+'<small>anos</small></div></div>'+
+    return '<div class="panel"><div class="panel-head"><h3>'+(title||'Balance')+'</h3></div><div class="balance-card">'+
+      '<div class="balance-row"><div style="display:flex;align-items:center;gap:14px;">'+ringSvg(vPct,'accent')+'<div><div class="balance-title">Vacation</div><div class="balance-sub">'+vUsed+' of '+vTotal+' business days used</div>'+(vPending>0?'<div class="pending-note">+'+vPending+' pending'+(vPending!==1?'':'')+' approval</div>':'')+'</div></div>'+
+      '<div class="balance-figure '+(vRemain<0?'low':'')+'"'+(vRemain<0?' style="color:var(--rose)"':'')+'>'+vRemain+'<small>remaining</small></div></div>'+
+      '<div class="balance-row"><div style="display:flex;align-items:center;gap:14px;">'+ringSvg(sPct,'moss')+'<div><div class="balance-title">Sick leave</div><div class="balance-sub">'+sUsed+' of '+sTotal+' days used</div>'+(sPending>0?'<div class="pending-note">+'+sPending+' pending'+(sPending!==1?'':'')+' approval</div>':'')+'</div></div>'+
+      '<div class="balance-figure"'+(sRemain<0?' style="color:var(--rose)"':'')+'>'+sRemain+'<small>remaining</small></div></div>'+
+      '<div class="balance-row"><div><div class="balance-title">Tenure</div><div class="balance-sub">since '+fmt(person.startDate)+'</div></div><div class="balance-figure">'+yearsOfService(person.startDate)+'<small>years</small></div></div>'+
       '</div></div>';
   }
   function yearsOfService(startIso){
@@ -682,22 +682,22 @@
 
   // ---------------- Drawer navigation ----------------
   var NAV_STRUCTURE = [
-    { section:'Área do Colaborador', items:[
-      {key:'home', label:'Meu Painel', icon:'home'},
-      {action:'mark', label:'Marcar Férias / Ausência', icon:'calendarPlus'},
-      {key:'mine', label:'Meus Pedidos & Histórico', icon:'list'},
-      {key:'justificativos', label:'Justificativos', icon:'paperclip'}
+    { section:'Employee Area', items:[
+      {key:'home', label:'My Dashboard', icon:'home'},
+      {action:'mark', label:'Request Time Off', icon:'calendarPlus'},
+      {key:'mine', label:'My Requests & History', icon:'list'},
+      {key:'justificativos', label:'Documents', icon:'paperclip'}
     ]},
-    { section:'Gestão & RH', rh:true, gestorOnly:true, items:[
-      {key:'teamcal', label:'Calendário da Equipa', icon:'calendar'},
-      {key:'pending', label:'Aprovações Pendentes', icon:'checkCircle', badge:true},
-      {key:'pipeline', label:'Pipeline de Pedidos', icon:'kanban'},
-      {key:'reports', label:'Relatórios & Estatísticas', icon:'barChart'},
-      {key:'team', label:'Gestão de Colaboradores', icon:'users'}
+    { section:'Management & HR', rh:true, gestorOnly:true, items:[
+      {key:'teamcal', label:'Team Calendar', icon:'calendar'},
+      {key:'pending', label:'Pending Approvals', icon:'checkCircle', badge:true},
+      {key:'pipeline', label:'Requests Pipeline', icon:'kanban'},
+      {key:'reports', label:'Reports & Statistics', icon:'barChart'},
+      {key:'team', label:'Employee Management', icon:'users'}
     ]},
-    { section:'Geral & Definições', items:[
-      {key:'settings', label:'Configurações', icon:'settings'},
-      {key:'help', label:'Ajuda & Políticas', icon:'help'}
+    { section:'General & Settings', items:[
+      {key:'settings', label:'Settings', icon:'settings'},
+      {key:'help', label:'Help & Policies', icon:'help'}
     ]}
   ];
   var drawerOpen = false;
@@ -722,8 +722,8 @@
       document.getElementById('topbar-avatar').textContent = initials(me.name);
     }
     document.getElementById('drawer-name').textContent = me.name;
-    document.getElementById('drawer-role').textContent = me.role==='gestor' ? 'Gestor' : 'Colaborador';
-    document.getElementById('drawer-balance').textContent = vRemain+' dias restantes';
+    document.getElementById('drawer-role').textContent = me.role==='gestor' ? 'Manager' : 'Employee';
+    document.getElementById('drawer-balance').textContent = vRemain+' days remaining';
 
     var gestorViews = {team:1, pending:1, teamcal:1, reports:1, empDetail:1, pipeline:1};
     if(gestorViews[currentView] && me.role!=='gestor') currentView='home';
@@ -776,14 +776,14 @@
 
   function viewPendingApprovals(){
     var pending = state.leaves.filter(function(l){return l.status==='pendente';});
-    var html = '<div class="page-head"><div><h2>Aprovações Pendentes</h2><p>Central de validação rápida para a equipa.</p></div></div>';
-    html += '<div class="panel'+(pending.length?' panel-attention':'')+'"><div class="panel-head"><h3>Pedidos ('+pending.length+')</h3></div><div class="panel-body pad" style="padding-top:2px;">';
+    var html = '<div class="page-head"><div><h2>Pending Approvals</h2><p>Quick validation hub for the team.</p></div></div>';
+    html += '<div class="panel'+(pending.length?' panel-attention':'')+'"><div class="panel-head"><h3>Requests ('+pending.length+')</h3></div><div class="panel-body pad" style="padding-top:2px;">';
     if(!pending.length){
-      html += '<div class="empty">Sem pedidos pendentes.</div>';
+      html += '<div class="empty">No pending requests.</div>';
     } else {
       pending.forEach(function(l){
-        html += '<div class="req-row"><div class="list-item-main">'+avatarHtml(employeeById(l.employeeId)||{name:l.employeeName})+'<div><div class="li-name">'+esc(l.employeeName)+'</div><div class="li-sub">'+chipLabel(l.type)+' · '+fmt(l.start)+' – '+fmt(l.end)+' · '+l.days+' dia'+(l.days!==1?'s':'')+'</div></div></div>'+
-          '<div class="req-actions"><button class="btn btn-sm btn-reject" data-reject="'+l.id+'">Rejeitar</button><button class="btn btn-sm btn-approve" data-approve="'+l.id+'">Aprovar</button></div></div>';
+        html += '<div class="req-row"><div class="list-item-main">'+avatarHtml(employeeById(l.employeeId)||{name:l.employeeName})+'<div><div class="li-name">'+esc(l.employeeName)+'</div><div class="li-sub">'+chipLabel(l.type)+' · '+fmt(l.start)+' – '+fmt(l.end)+' · '+l.days+' day'+(l.days!==1?'s':'')+'</div></div></div>'+
+          '<div class="req-actions"><button class="btn btn-sm btn-reject" data-reject="'+l.id+'">Reject</button><button class="btn btn-sm btn-approve" data-approve="'+l.id+'">Approve</button></div></div>';
       });
     }
     html += '</div></div>';
@@ -797,28 +797,28 @@
   function kanbanCard(l){
     var actions = '';
     if(l.status==='pendente'){
-      actions = '<button class="btn btn-sm btn-reject" data-pipe="'+l.id+'" data-to="rejeitado">Rejeitar</button><button class="btn btn-sm btn-approve" data-pipe="'+l.id+'" data-to="aprovado">Aprovar</button>';
+      actions = '<button class="btn btn-sm btn-reject" data-pipe="'+l.id+'" data-to="rejeitado">Reject</button><button class="btn btn-sm btn-approve" data-pipe="'+l.id+'" data-to="aprovado">Approve</button>';
     } else if(l.status==='aprovado'){
-      actions = '<button class="btn btn-ghost btn-sm" data-pipe="'+l.id+'" data-to="pendente">‹ Reverter</button><button class="btn btn-sm btn-reject" data-pipe="'+l.id+'" data-to="rejeitado">Rejeitar</button>';
+      actions = '<button class="btn btn-ghost btn-sm" data-pipe="'+l.id+'" data-to="pendente">‹ Revert</button><button class="btn btn-sm btn-reject" data-pipe="'+l.id+'" data-to="rejeitado">Reject</button>';
     } else {
-      actions = '<button class="btn btn-ghost btn-sm" data-pipe="'+l.id+'" data-to="pendente">‹ Reverter</button><button class="btn btn-sm btn-approve" data-pipe="'+l.id+'" data-to="aprovado">Aprovar</button>';
+      actions = '<button class="btn btn-ghost btn-sm" data-pipe="'+l.id+'" data-to="pendente">‹ Revert</button><button class="btn btn-sm btn-approve" data-pipe="'+l.id+'" data-to="aprovado">Approve</button>';
     }
     return '<div class="kanban-card"><div class="list-item-main">'+avatarHtml(employeeById(l.employeeId)||{name:l.employeeName})+'<div><div class="li-name">'+esc(l.employeeName)+'</div><div class="li-sub">'+chipLabel(l.type)+' · '+fmt(l.start)+' – '+fmt(l.end)+'</div></div></div>'+
-      (l.respondedByName ? '<div class="status-detail" style="margin-top:8px;">por '+esc(l.respondedByName)+'</div>' : '')+
+      (l.respondedByName ? '<div class="status-detail" style="margin-top:8px;">by '+esc(l.respondedByName)+'</div>' : '')+
       '<div class="kanban-card-actions">'+actions+'</div></div>';
   }
   function viewPipeline(){
     var cols = [
-      {status:'pendente', title:'Pendente'},
-      {status:'aprovado', title:'Aprovado'},
-      {status:'rejeitado', title:'Rejeitado'}
+      {status:'pendente', title:'Pending'},
+      {status:'aprovado', title:'Approved'},
+      {status:'rejeitado', title:'Rejected'}
     ];
-    var html = '<div class="page-head"><div><h2>Pipeline de Pedidos</h2><p>Acompanha os pedidos de férias e baixa por fase.</p></div></div>';
+    var html = '<div class="page-head"><div><h2>Requests Pipeline</h2><p>Track vacation and sick leave requests by stage.</p></div></div>';
     html += '<div class="kanban-board">';
     cols.forEach(function(col){
       var items = state.leaves.filter(function(l){return l.status===col.status;}).sort(function(a,b){return a.start<b.start?-1:1;});
       html += '<div class="kanban-col"><div class="kanban-col-head"><h3>'+col.title+'</h3><span class="kanban-count">'+items.length+'</span></div><div class="kanban-cards">';
-      if(items.length===0) html += '<div class="empty">Sem pedidos.</div>';
+      if(items.length===0) html += '<div class="empty">No requests.</div>';
       else items.forEach(function(l){ html += kanbanCard(l); });
       html += '</div></div>';
     });
@@ -842,8 +842,8 @@
     var daysInMonth = new Date(y,m+1,0).getDate();
     var todayStr = todayIso();
 
-    var html = '<div class="page-head"><div><h2>Calendário da Equipa</h2><p>Vista horizontal para controlo de sobreposição de ausências.</p></div>'+
-      '<button class="btn btn-primary" id="wc-mark">+ Marcar ausência</button></div>';
+    var html = '<div class="page-head"><div><h2>Team Calendar</h2><p>Horizontal view to track overlapping time off.</p></div>'+
+      '<button class="btn btn-primary" id="wc-mark">+ Request time off</button></div>';
 
     html += '<div class="panel"><div class="panel-head"><h3>'+MONTH_NAMES[m]+' '+y+'</h3><div class="cal-nav"><button type="button" id="wc-prev">‹</button><button type="button" id="wc-next">›</button></div></div>';
     html += '<div class="wallchart-scroll"><div class="wallchart">';
@@ -861,8 +861,8 @@
 
     state.employees.forEach(function(e){
       html += '<div class="wallchart-row"><div class="wallchart-namecol">'+
-        avatarHtml(e)+'<div><div class="li-name">'+esc(e.name)+'</div><div class="li-sub">'+esc(e.jobTitle||(e.role==='gestor'?'Gestor':'Colaborador'))+'</div></div>'+
-        '<button class="icon-btn" title="Marcar ausência" data-mark="'+e.id+'" data-name="'+esc(e.name)+'" style="margin-left:auto;">🗓️</button>'+
+        avatarHtml(e)+'<div><div class="li-name">'+esc(e.name)+'</div><div class="li-sub">'+esc(e.jobTitle||(e.role==='gestor'?'Manager':'Employee'))+'</div></div>'+
+        '<button class="icon-btn" title="Request time off" data-mark="'+e.id+'" data-name="'+esc(e.name)+'" style="margin-left:auto;">🗓️</button>'+
         '</div><div class="wallchart-days" style="'+colStyle+'">';
       for(var d2=1; d2<=daysInMonth; d2++){
         var iso2 = isoFromYMD(y,m,d2);
@@ -883,7 +883,7 @@
     });
 
     html += '</div></div>';
-    html += '<div class="wallchart-legend"><span><span class="cal-dot" style="background:var(--accent)"></span>Férias</span><span><span class="cal-dot" style="background:var(--moss)"></span>Baixa</span><span><span class="cal-dot" style="background:var(--pending)"></span>Pendente</span></div>';
+    html += '<div class="wallchart-legend"><span><span class="cal-dot" style="background:var(--accent)"></span>Vacation</span><span><span class="cal-dot" style="background:var(--moss)"></span>Sick leave</span><span><span class="cal-dot" style="background:var(--pending)"></span>Pending</span></div>';
     html += '</div>';
     return html;
   }
@@ -904,16 +904,16 @@
     var pending = state.leaves.filter(function(l){return l.status==='pendente';});
     var daysFerias = approved.filter(function(l){return l.type==='ferias';}).reduce(function(s,l){return s+l.days;},0);
     var daysBaixa = approved.filter(function(l){return l.type==='baixa';}).reduce(function(s,l){return s+l.days;},0);
-    var html = '<div class="page-head"><div><h2>Relatórios & Estatísticas</h2><p>Mapa de férias de '+year+'.</p></div><button class="btn btn-primary" id="export-csv">Exportar CSV</button></div>';
+    var html = '<div class="page-head"><div><h2>Reports & Statistics</h2><p>Vacation map for '+year+'.</p></div><button class="btn btn-primary" id="export-csv">Export CSV</button></div>';
     html += '<div class="stat-row">'+
-      '<div class="stat-card"><div class="stat-num">'+approved.length+'</div><div class="stat-label">Ausências aprovadas</div></div>'+
-      '<div class="stat-card"><div class="stat-num">'+pending.length+'</div><div class="stat-label">Pendentes</div></div>'+
-      '<div class="stat-card"><div class="stat-num">'+daysFerias+'</div><div class="stat-label">Dias de férias usados</div></div>'+
-      '<div class="stat-card"><div class="stat-num">'+daysBaixa+'</div><div class="stat-label">Dias de baixa usados</div></div>'+
+      '<div class="stat-card"><div class="stat-num">'+approved.length+'</div><div class="stat-label">Approved time off</div></div>'+
+      '<div class="stat-card"><div class="stat-num">'+pending.length+'</div><div class="stat-label">Pending</div></div>'+
+      '<div class="stat-card"><div class="stat-num">'+daysFerias+'</div><div class="stat-label">Vacation days used</div></div>'+
+      '<div class="stat-card"><div class="stat-num">'+daysBaixa+'</div><div class="stat-label">Sick days used</div></div>'+
       '</div>';
-    html += '<div class="panel"><div class="panel-head"><h3>Todos os registos</h3></div><div class="table-wrap"><table><thead><tr><th>Colaborador</th><th>Tipo</th><th>Início</th><th>Fim</th><th>Dias</th><th>Estado</th></tr></thead><tbody>';
+    html += '<div class="panel"><div class="panel-head"><h3>All records</h3></div><div class="table-wrap"><table><thead><tr><th>Employee</th><th>Type</th><th>Start</th><th>End</th><th>Days</th><th>Status</th></tr></thead><tbody>';
     if(!state.leaves.length){
-      html += '<tr><td colspan="6"><div class="empty">Sem registos ainda.</div></td></tr>';
+      html += '<tr><td colspan="6"><div class="empty">No records yet.</div></td></tr>';
     } else {
       state.leaves.slice().sort(function(a,b){return a.start<b.start?1:-1;}).forEach(function(l){
         html += '<tr><td>'+esc(l.employeeName)+'</td><td>'+chip(l.type)+'</td><td class="mono">'+fmt(l.start)+'</td><td class="mono">'+fmt(l.end)+'</td><td class="mono">'+l.days+'</td><td>'+statusChip(l.status)+'</td></tr>';
@@ -927,7 +927,7 @@
     if(btn) btn.addEventListener('click', exportLeavesCsv);
   }
   function exportLeavesCsv(){
-    var rows = [['Colaborador','Tipo','Início','Fim','Dias','Estado']];
+    var rows = [['Employee','Type','Start','End','Days','Status']];
     state.leaves.slice().sort(function(a,b){return a.start<b.start?-1:1;}).forEach(function(l){
       rows.push([l.employeeName, chipLabel(l.type), l.start, l.end, l.days, l.status]);
     });
@@ -947,16 +947,16 @@
   }
 
   function viewSettings(){
-    return '<div class="page-head"><div><h2>Configurações</h2><p>Feriados nacionais/locais e regras da empresa.</p></div></div>'+
-      '<div class="panel"><div class="panel-body pad">'+emptyState('settings','Ainda sem configurações personalizadas','Em breve vais poder definir feriados nacionais e locais, e regras específicas da empresa (ex.: dias mínimos de aviso, limites de sobreposição de férias).')+'</div></div>';
+    return '<div class="page-head"><div><h2>Settings</h2><p>National/local holidays and company rules.</p></div></div>'+
+      '<div class="panel"><div class="panel-body pad">'+emptyState('settings','No custom settings yet','Soon you will be able to set national and local holidays, and company-specific rules (e.g. minimum notice days, vacation overlap limits).')+'</div></div>';
   }
 
   function viewHelp(){
-    return '<div class="page-head"><div><h2>Ajuda & Políticas</h2><p>Como funciona o HR-PCT.</p></div></div>'+
+    return '<div class="page-head"><div><h2>Help & Policies</h2><p>How HR-PCT works.</p></div></div>'+
       '<div class="panel"><div class="panel-body pad">'+
-      '<p style="margin:0 0 14px;">As férias contam apenas dias úteis (segunda a sexta); as baixas contam todos os dias do período. Ambos são calculados por ano civil.</p>'+
-      '<p style="margin:0 0 14px;">Quando um colaborador marca uma ausência, fica <strong>pendente</strong> até um gestor aprovar ou rejeitar. Quando é o próprio gestor a marcar, fica logo aprovada.</p>'+
-      '<p style="margin:0;">Para dúvidas sobre a política de férias da tua empresa, contacta o teu responsável de RH.</p>'+
+      '<p style="margin:0 0 14px;">Vacation only counts business days (Monday to Friday); sick leave counts every day in the period. Both are calculated per calendar year.</p>'+
+      '<p style="margin:0 0 14px;">When an employee requests time off, it stays <strong>pending</strong> until a manager approves or rejects it. When the manager requests it themselves, it is approved right away.</p>'+
+      '<p style="margin:0;">For questions about your company\'s vacation policy, contact your HR manager.</p>'+
       '</div></div>';
   }
 
@@ -968,7 +968,7 @@
   function readFileAsDataURL(file){
     return new Promise(function(resolve,reject){
       var reader = new FileReader();
-      reader.onerror = function(){ reject(new Error('Não foi possível ler o ficheiro.')); };
+      reader.onerror = function(){ reject(new Error('Could not read the file.')); };
       reader.onload = function(){ resolve(reader.result); };
       reader.readAsDataURL(file);
     });
@@ -979,20 +979,20 @@
     var mine = (state.justificativos||[]).filter(function(j){return j.employeeId===me.id;});
     var myBaixas = state.leaves.filter(function(l){return l.employeeId===me.id && l.type==='baixa';});
 
-    var html = '<div class="page-head"><div><h2>Justificativos</h2><p>Atestados médicos e comprovativos de dispensa.</p></div>'+
-      '<button class="btn btn-primary" id="jf-upload-btn">+ Anexar ficheiro</button></div>';
+    var html = '<div class="page-head"><div><h2>Documents</h2><p>Medical certificates and leave supporting documents.</p></div>'+
+      '<button class="btn btn-primary" id="jf-upload-btn">+ Attach file</button></div>';
 
     html += '<div class="panel"><div class="panel-body pad">';
     if(mine.length===0){
-      html += emptyState('paperclip','Ainda não há justificativos','Anexa atestados médicos e outros comprovativos — podes associá-los a um pedido de baixa específico.');
+      html += emptyState('paperclip','No documents yet','Attach medical certificates and other supporting documents — you can link them to a specific sick leave request.');
     } else {
       mine.forEach(function(j){
         var leave = j.leaveId ? myBaixas.find(function(l){return l.id===j.leaveId;}) : null;
         html += '<div class="activity-item"><div class="activity-icon">'+icon('paperclip')+'</div><div style="flex:1;min-width:0;">'+
           '<div class="activity-head"><span class="activity-type">'+esc(j.filename)+'</span><span class="activity-meta">'+fmtDateTime(j.createdAt)+' · '+formatFileSize(j.size)+'</span></div>'+
-          (leave ? '<div class="status-detail" style="margin-top:2px;">Baixa · '+fmt(leave.start)+' – '+fmt(leave.end)+'</div>' : '')+
-          '<div class="activity-badges"><a class="btn btn-ghost btn-sm" href="/api/justificativos/'+j.id+'/file" target="_blank" rel="noopener">Ver / descarregar</a></div>'+
-          '</div><button class="activity-remove" data-justificativo-remove="'+j.id+'" title="Remover">✕</button></div>';
+          (leave ? '<div class="status-detail" style="margin-top:2px;">Sick leave · '+fmt(leave.start)+' – '+fmt(leave.end)+'</div>' : '')+
+          '<div class="activity-badges"><a class="btn btn-ghost btn-sm" href="/api/justificativos/'+j.id+'/file" target="_blank" rel="noopener">View / download</a></div>'+
+          '</div><button class="activity-remove" data-justificativo-remove="'+j.id+'" title="Remove">✕</button></div>';
       });
     }
     html += '</div></div>';
@@ -1002,23 +1002,23 @@
   function openJustificativoUploadModal(){
     var me = state.me;
     var myBaixas = state.leaves.filter(function(l){return l.employeeId===me.id && l.type==='baixa';});
-    var leaveOptions = '<option value="">Nenhum em particular</option>'+myBaixas.map(function(l){
-      return '<option value="'+l.id+'">Baixa · '+fmt(l.start)+' – '+fmt(l.end)+'</option>';
+    var leaveOptions = '<option value="">None in particular</option>'+myBaixas.map(function(l){
+      return '<option value="'+l.id+'">Sick leave · '+fmt(l.start)+' – '+fmt(l.end)+'</option>';
     }).join('');
     var m = openModal(
-      '<h3>Anexar justificativo</h3><p class="modal-sub">PDF ou imagem, até 5MB.</p>'+
+      '<h3>Attach document</h3><p class="modal-sub">PDF or image, up to 5MB.</p>'+
       '<div class="form-error" id="jf-err"></div>'+
-      '<div class="field"><label>Ficheiro</label><input type="file" id="f-jf-file" accept="application/pdf,image/*"></div>'+
-      (myBaixas.length ? '<div class="field"><label>Associar a um pedido de baixa (opcional)</label><select id="f-jf-leave">'+leaveOptions+'</select></div>' : '')+
-      '<div class="modal-actions"><button class="btn btn-ghost" id="jf-cancel">Cancelar</button><button class="btn btn-primary" id="jf-save">Anexar</button></div>'
+      '<div class="field"><label>File</label><input type="file" id="f-jf-file" accept="application/pdf,image/*"></div>'+
+      (myBaixas.length ? '<div class="field"><label>Link to a sick leave request (optional)</label><select id="f-jf-leave">'+leaveOptions+'</select></div>' : '')+
+      '<div class="modal-actions"><button class="btn btn-ghost" id="jf-cancel">Cancel</button><button class="btn btn-primary" id="jf-save">Attach</button></div>'
     );
     m.querySelector('#jf-cancel').addEventListener('click', closeModal);
     m.querySelector('#jf-save').addEventListener('click', async function(){
       var fileInput = document.getElementById('f-jf-file');
       var errEl = document.getElementById('jf-err');
       var file = fileInput.files && fileInput.files[0];
-      if(!file){ errEl.textContent='Escolhe um ficheiro.'; errEl.style.display='block'; return; }
-      if(file.size > 5*1024*1024){ errEl.textContent='O ficheiro tem de ter menos de 5MB.'; errEl.style.display='block'; return; }
+      if(!file){ errEl.textContent='Choose a file.'; errEl.style.display='block'; return; }
+      if(file.size > 5*1024*1024){ errEl.textContent='The file must be smaller than 5MB.'; errEl.style.display='block'; return; }
       try{
         var dataUrl = await readFileAsDataURL(file);
         var leaveSel = document.getElementById('f-jf-leave');
@@ -1027,8 +1027,8 @@
           leaveId: leaveSel ? (leaveSel.value||null) : null
         })});
         closeModal(); await loadState();
-        showToast('Justificativo anexado.');
-      }catch(e){ errEl.textContent = e.message || 'Não foi possível anexar o ficheiro.'; errEl.style.display='block'; }
+        showToast('Document attached.');
+      }catch(e){ errEl.textContent = e.message || 'Could not attach the file.'; errEl.style.display='block'; }
     });
   }
 
@@ -1037,7 +1037,7 @@
     if(uploadBtn) uploadBtn.addEventListener('click', openJustificativoUploadModal);
     document.querySelectorAll('[data-justificativo-remove]').forEach(function(btn){
       btn.addEventListener('click', async function(){
-        if(!confirm('Remover este justificativo?')) return;
+        if(!confirm('Remove this document?')) return;
         try{ await api('justificativos/'+btn.getAttribute('data-justificativo-remove'), {method:'DELETE'}); await loadState(); }
         catch(e){ showToast(e.message); }
       });
@@ -1055,36 +1055,36 @@
     var statCards = '';
     if(me.role==='gestor'){
       statCards =
-        '<div class="stat-card"><div class="stat-num">'+state.employees.length+'</div><div class="stat-label">Colaboradores</div></div>'+
-        '<div class="stat-card"><div class="stat-num" style="'+(pending.length>0?'color:var(--pending)':'')+'">'+pending.length+'</div><div class="stat-label">Pedidos pendentes</div></div>'+
-        '<div class="stat-card"><div class="stat-num">'+onLeaveToday.length+'</div><div class="stat-label">Ausentes hoje</div></div>'+
-        '<div class="stat-card"><div class="stat-num">'+upcoming.length+'</div><div class="stat-label">Ausências agendadas</div></div>';
+        '<div class="stat-card"><div class="stat-num">'+state.employees.length+'</div><div class="stat-label">Employees</div></div>'+
+        '<div class="stat-card"><div class="stat-num" style="'+(pending.length>0?'color:var(--pending)':'')+'">'+pending.length+'</div><div class="stat-label">Pending requests</div></div>'+
+        '<div class="stat-card"><div class="stat-num">'+onLeaveToday.length+'</div><div class="stat-label">Out today</div></div>'+
+        '<div class="stat-card"><div class="stat-num">'+upcoming.length+'</div><div class="stat-label">Scheduled time off</div></div>';
     }
 
-    var html = '<div class="page-head"><div><h2>Olá, '+esc(me.name.split(' ')[0])+'</h2><p>'+(me.role==='gestor'?'Resumo da equipa e do teu saldo pessoal.':'O teu saldo de férias e baixas.')+'</p></div>'+
-      '<button class="btn btn-primary" id="quick-mark">+ Marcar ausência</button></div>';
+    var html = '<div class="page-head"><div><h2>Hello, '+esc(me.name.split(' ')[0])+'</h2><p>'+(me.role==='gestor'?'Summary of the team and your personal balance.':'Your vacation and sick leave balance.')+'</p></div>'+
+      '<button class="btn btn-primary" id="quick-mark">+ Request time off</button></div>';
 
     if(statCards) html += '<div class="stat-row">'+statCards+'</div>';
 
-    html += '<div class="panel"><div class="panel-head"><h3>Comunicados</h3>'+(me.role==='gestor'?'<button class="btn btn-primary btn-sm" id="add-announcement">+ Novo comunicado</button>':'')+'</div><div class="panel-body pad">';
+    html += '<div class="panel"><div class="panel-head"><h3>Announcements</h3>'+(me.role==='gestor'?'<button class="btn btn-primary btn-sm" id="add-announcement">+ New announcement</button>':'')+'</div><div class="panel-body pad">';
     if(!state.announcements || state.announcements.length===0){
-      html += emptyState('mail','Sem comunicados','Ainda não há comunicados da empresa.');
+      html += emptyState('mail','No announcements','There are no company announcements yet.');
     } else {
       state.announcements.slice(0,5).forEach(function(a){
         html += '<div class="activity-item"><div class="activity-icon">'+icon('mail')+'</div><div style="flex:1;min-width:0;">'+
           '<div class="activity-head"><span class="activity-type">'+esc(a.title)+'</span><span class="activity-meta">'+fmtDateTime(a.createdAt)+'</span></div>'+
           '<div class="activity-details">'+esc(a.body)+'</div>'+
-          (a.createdByName?'<div class="status-detail" style="margin-top:4px;">por '+esc(a.createdByName)+'</div>':'')+
-          '</div>'+(me.role==='gestor'?'<button class="activity-remove" data-announcement-remove="'+a.id+'" title="Remover">✕</button>':'')+'</div>';
+          (a.createdByName?'<div class="status-detail" style="margin-top:4px;">by '+esc(a.createdByName)+'</div>':'')+
+          '</div>'+(me.role==='gestor'?'<button class="activity-remove" data-announcement-remove="'+a.id+'" title="Remove">✕</button>':'')+'</div>';
       });
     }
     html += '</div></div>';
 
     if(me.role==='gestor' && pending.length>0){
-      html += '<div class="panel panel-attention"><div class="panel-head"><h3>Pedidos pendentes</h3></div><div class="panel-body pad" style="padding-top:2px;">';
+      html += '<div class="panel panel-attention"><div class="panel-head"><h3>Pending requests</h3></div><div class="panel-body pad" style="padding-top:2px;">';
       pending.forEach(function(l){
-        html += '<div class="req-row"><div class="list-item-main">'+avatarHtml(employeeById(l.employeeId)||{name:l.employeeName})+'<div><div class="li-name">'+esc(l.employeeName)+'</div><div class="li-sub">'+chipLabel(l.type)+' · '+fmt(l.start)+' – '+fmt(l.end)+' · '+l.days+' dia'+(l.days!==1?'s':'')+'</div></div></div>'+
-          '<div class="req-actions"><button class="btn btn-sm btn-reject" data-reject="'+l.id+'">Rejeitar</button><button class="btn btn-sm btn-approve" data-approve="'+l.id+'">Aprovar</button></div></div>';
+        html += '<div class="req-row"><div class="list-item-main">'+avatarHtml(employeeById(l.employeeId)||{name:l.employeeName})+'<div><div class="li-name">'+esc(l.employeeName)+'</div><div class="li-sub">'+chipLabel(l.type)+' · '+fmt(l.start)+' – '+fmt(l.end)+' · '+l.days+' day'+(l.days!==1?'s':'')+'</div></div></div>'+
+          '<div class="req-actions"><button class="btn btn-sm btn-reject" data-reject="'+l.id+'">Reject</button><button class="btn btn-sm btn-approve" data-approve="'+l.id+'">Approve</button></div></div>';
       });
       html += '</div></div>';
     }
@@ -1092,10 +1092,10 @@
     if(me.role==='gestor'){
       var openMsgs = (state.messages||[]).filter(function(m){return m.status==='aberto';});
       if(openMsgs.length>0){
-        html += '<div class="panel panel-attention"><div class="panel-head"><h3>Pedidos de Colaboradores</h3></div><div class="panel-body pad" style="padding-top:2px;">';
+        html += '<div class="panel panel-attention"><div class="panel-head"><h3>Employee Requests</h3></div><div class="panel-body pad" style="padding-top:2px;">';
         openMsgs.forEach(function(m){
           html += '<div class="req-row"><div class="list-item-main">'+avatarHtml(employeeById(m.employeeId)||{name:m.employeeName})+'<div><div class="li-name">'+esc(m.employeeName)+' · '+esc(m.subject)+'</div><div class="li-sub">'+esc(m.body)+'</div></div></div>'+
-            '<div class="req-actions"><button class="btn btn-primary btn-sm" data-msg-respond="'+m.id+'">Responder</button></div></div>';
+            '<div class="req-actions"><button class="btn btn-primary btn-sm" data-msg-respond="'+m.id+'">Reply</button></div></div>';
         });
         html += '</div></div>';
       }
@@ -1106,35 +1106,35 @@
     }
 
     html += '<div class="profile-grid">';
-    html += balanceCard(me, 'Saldo '+new Date().getFullYear());
+    html += balanceCard(me, 'Balance '+new Date().getFullYear());
     html += calendarWidget(me.id);
     html += '</div>';
 
     if(me.role!=='gestor'){
-      html += '<div class="panel"><div class="panel-head"><h3>Os meus pedidos</h3><button class="btn btn-ghost btn-sm" id="add-message">+ Pedido de informação</button></div><div class="panel-body pad">';
+      html += '<div class="panel"><div class="panel-head"><h3>My requests</h3><button class="btn btn-ghost btn-sm" id="add-message">+ Information request</button></div><div class="panel-body pad">';
       var myMsgs = state.messages||[];
       if(myMsgs.length===0){
-        html += emptyState('mail','Sem pedidos enviados','Usa isto para pedir informação ao RH — férias e ausências têm o seu próprio botão acima.');
+        html += emptyState('mail','No requests sent','Use this to ask HR for information — vacation and time off have their own button above.');
       } else {
         myMsgs.forEach(function(m){
           html += '<div class="activity-item"><div class="activity-icon">'+icon('mail')+'</div><div style="flex:1;min-width:0;">'+
             '<div class="activity-head"><span class="activity-type">'+esc(m.subject)+'</span><span class="activity-meta">'+fmtDateTime(m.createdAt)+'</span></div>'+
             '<div class="activity-details">'+esc(m.body)+'</div>'+
-            '<div class="activity-badges">'+(m.status==='aberto'?'<span class="chip chip-pendente">Por responder</span>':'<span class="chip chip-aprovado">Respondido</span>')+'</div>'+
-            (m.response?'<div class="status-detail" style="margin-top:6px;">Resposta'+(m.respondedByName?' de '+esc(m.respondedByName):'')+': '+esc(m.response)+'</div>':'')+
-            '</div>'+(m.status==='aberto'?'<button class="activity-remove" data-message-remove="'+m.id+'" title="Cancelar pedido">✕</button>':'')+'</div>';
+            '<div class="activity-badges">'+(m.status==='aberto'?'<span class="chip chip-pendente">Awaiting reply</span>':'<span class="chip chip-aprovado">Replied</span>')+'</div>'+
+            (m.response?'<div class="status-detail" style="margin-top:6px;">Reply'+(m.respondedByName?' from '+esc(m.respondedByName):'')+': '+esc(m.response)+'</div>':'')+
+            '</div>'+(m.status==='aberto'?'<button class="activity-remove" data-message-remove="'+m.id+'" title="Cancel request">✕</button>':'')+'</div>';
         });
       }
       html += '</div></div>';
     }
 
-    html += '<div class="panel"><div class="panel-head"><h3>'+(me.role==='gestor'?'Próximas ausências (equipa)':'As tuas próximas ausências')+'</h3></div><div class="panel-body pad">';
+    html += '<div class="panel"><div class="panel-head"><h3>'+(me.role==='gestor'?'Upcoming time off (team)':'Your upcoming time off')+'</h3></div><div class="panel-body pad">';
     var list = me.role==='gestor' ? upcoming : upcoming.filter(function(l){return l.employeeId===me.id;});
     if(list.length===0){
-      html += '<div class="empty">Sem ausências agendadas.</div>';
+      html += '<div class="empty">No scheduled time off.</div>';
     } else {
       list.forEach(function(l){
-        html += '<div class="list-item"><div class="list-item-main">'+avatarHtml(employeeById(l.employeeId)||{name:l.employeeName})+'<div><div class="li-name">'+esc(l.employeeName)+'</div><div class="li-sub">'+fmt(l.start)+' – '+fmt(l.end)+' · '+l.days+' dia'+(l.days!==1?'s':'')+'</div></div></div>'+
+        html += '<div class="list-item"><div class="list-item-main">'+avatarHtml(employeeById(l.employeeId)||{name:l.employeeName})+'<div><div class="li-name">'+esc(l.employeeName)+'</div><div class="li-sub">'+fmt(l.start)+' – '+fmt(l.end)+' · '+l.days+' day'+(l.days!==1?'s':'')+'</div></div></div>'+
           '<div class="chip-row">'+chip(l.type)+statusChip(l.status)+'</div></div>';
       });
     }
@@ -1173,7 +1173,7 @@
     if(addAnnouncement) addAnnouncement.addEventListener('click', openAnnouncementModal);
     document.querySelectorAll('[data-announcement-remove]').forEach(function(btn){
       btn.addEventListener('click', async function(){
-        if(!confirm('Remover este comunicado?')) return;
+        if(!confirm('Remove this announcement?')) return;
         try{ await api('announcements/'+btn.getAttribute('data-announcement-remove'), {method:'DELETE'}); await loadState(); }
         catch(e){ showToast(e.message); }
       });
@@ -1182,7 +1182,7 @@
     if(addMessage) addMessage.addEventListener('click', openMessageModal);
     document.querySelectorAll('[data-message-remove]').forEach(function(btn){
       btn.addEventListener('click', async function(){
-        if(!confirm('Cancelar este pedido?')) return;
+        if(!confirm('Cancel this request?')) return;
         try{ await api('messages/'+btn.getAttribute('data-message-remove'), {method:'DELETE'}); await loadState(); }
         catch(e){ showToast(e.message); }
       });
@@ -1217,7 +1217,7 @@
   async function respondLeave(id, status){
     try{
       await api('leaves/'+id+'/respond', {method:'POST', body: JSON.stringify({status:status})});
-      showToast(status==='aprovado' ? 'Pedido aprovado.' : status==='rejeitado' ? 'Pedido rejeitado.' : 'Pedido reposto como pendente.');
+      showToast(status==='aprovado' ? 'Request approved.' : status==='rejeitado' ? 'Request rejected.' : 'Request reset to pending.');
       await loadState();
     }catch(e){ showToast(e.message); }
   }
@@ -1226,31 +1226,31 @@
     var me = state.me;
     var mine = state.leaves.filter(function(l){return l.employeeId===me.id;}).sort(function(a,b){return a.start<b.start?1:-1;});
 
-    var html = '<div class="page-head"><div><h2>As minhas férias</h2><p>Marca novas ausências e consulta o histórico.</p></div>'+
-      '<button class="btn btn-primary" id="mine-mark">+ Marcar ausência</button></div>';
+    var html = '<div class="page-head"><div><h2>My time off</h2><p>Request new time off and check your history.</p></div>'+
+      '<button class="btn btn-primary" id="mine-mark">+ Request time off</button></div>';
 
     html += '<div class="profile-header" style="margin-bottom:20px;">'+
-      '<div class="avatar-upload-wrap">'+avatarHtml(me,'avatar-lg')+'<button type="button" class="avatar-upload-btn" id="mine-photo-btn" title="Alterar foto">'+icon('camera')+'</button><input type="file" accept="image/*" id="mine-photo-input" class="hidden"></div>'+
-      '<div class="profile-header-info"><h2>'+esc(me.name)+'</h2><p style="color:var(--ink-soft);font-size:13.5px;margin:2px 0 0;">'+esc(me.jobTitle||(me.role==='gestor'?'Gestor':'Colaborador'))+'</p></div>'+
+      '<div class="avatar-upload-wrap">'+avatarHtml(me,'avatar-lg')+'<button type="button" class="avatar-upload-btn" id="mine-photo-btn" title="Change photo">'+icon('camera')+'</button><input type="file" accept="image/*" id="mine-photo-input" class="hidden"></div>'+
+      '<div class="profile-header-info"><h2>'+esc(me.name)+'</h2><p style="color:var(--ink-soft);font-size:13.5px;margin:2px 0 0;">'+esc(me.jobTitle||(me.role==='gestor'?'Manager':'Employee'))+'</p></div>'+
       '</div>';
 
     html += '<div class="profile-grid">';
-    html += balanceCard(me, 'Saldo '+new Date().getFullYear());
-    html += '<div class="panel"><div class="panel-head"><h3>Contacto</h3><button class="btn btn-ghost btn-sm" id="edit-contact">Editar</button></div><div class="panel-body pad">'+
+    html += balanceCard(me, 'Balance '+new Date().getFullYear());
+    html += '<div class="panel"><div class="panel-head"><h3>Contact</h3><button class="btn btn-ghost btn-sm" id="edit-contact">Edit</button></div><div class="panel-body pad">'+
       '<div class="balance-row"><div class="balance-title">Email</div><div>'+esc(me.email||'—')+'</div></div>'+
-      '<div class="balance-row"><div class="balance-title">Telefone</div><div>'+esc(me.phone||'—')+'</div></div>'+
-      '<div class="balance-row"><div class="balance-title">Data de início</div><div>'+fmt(me.startDate)+'</div></div>'+
+      '<div class="balance-row"><div class="balance-title">Phone</div><div>'+esc(me.phone||'—')+'</div></div>'+
+      '<div class="balance-row"><div class="balance-title">Start date</div><div>'+fmt(me.startDate)+'</div></div>'+
       '</div></div>';
     html += '</div>';
 
-    html += '<div class="panel"><div class="panel-head"><h3>Histórico</h3></div><div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Início</th><th>Fim</th><th>Dias</th><th>Estado</th><th></th></tr></thead><tbody>';
+    html += '<div class="panel"><div class="panel-head"><h3>History</h3></div><div class="table-wrap"><table><thead><tr><th>Type</th><th>Start</th><th>End</th><th>Days</th><th>Status</th><th></th></tr></thead><tbody>';
     if(mine.length===0){
-      html += '<tr><td colspan="6"><div class="empty">Ainda não marcaste nenhuma ausência.</div></td></tr>';
+      html += '<tr><td colspan="6"><div class="empty">You haven\'t requested any time off yet.</div></td></tr>';
     } else {
       mine.forEach(function(l){
         var canCancel = me.role==='gestor' || l.status==='pendente' || l.start>=todayIso();
         html += '<tr><td>'+chip(l.type)+'</td><td class="mono">'+fmt(l.start)+'</td><td class="mono">'+fmt(l.end)+'</td><td class="mono">'+l.days+'</td><td>'+statusChip(l.status)+'</td>'+
-          '<td>'+(canCancel?'<button class="btn btn-ghost btn-sm" data-cancel="'+l.id+'">Cancelar</button>':'')+'</td></tr>';
+          '<td>'+(canCancel?'<button class="btn btn-ghost btn-sm" data-cancel="'+l.id+'">Cancel</button>':'')+'</td></tr>';
       });
     }
     html += '</tbody></table></div></div>';
@@ -1272,7 +1272,7 @@
     }
     document.querySelectorAll('[data-cancel]').forEach(function(btn){
       btn.addEventListener('click', async function(){
-        if(!confirm('Cancelar esta ausência?')) return;
+        if(!confirm('Cancel this time off?')) return;
         try{ await api('leaves/'+btn.getAttribute('data-cancel'), {method:'DELETE'}); await loadState(); }
         catch(e){ showToast(e.message); }
       });
@@ -1282,72 +1282,72 @@
   function viewEmployeeDetail(){
     var emp = state.employees.find(function(e){return e.id===viewingEmployeeId;});
     if(!emp){
-      return '<div class="page-head"><div><h2>Colaborador não encontrado</h2></div></div>'+
-        '<div class="panel"><div class="panel-body pad">'+emptyState('users','Este colaborador já não existe','Pode ter sido removido entretanto.')+'</div></div>';
+      return '<div class="page-head"><div><h2>Employee not found</h2></div></div>'+
+        '<div class="panel"><div class="panel-body pad">'+emptyState('users','This employee no longer exists','It may have been removed in the meantime.')+'</div></div>';
     }
     var myLeaves = state.leaves.filter(function(l){return l.employeeId===emp.id;}).sort(function(a,b){return a.start<b.start?1:-1;});
-    var contractEndText = emp.contractType==='efetivo' ? 'Sem termo' : (emp.contractEnd ? fmt(emp.contractEnd) : '—');
+    var contractEndText = emp.contractType==='efetivo' ? 'No end date' : (emp.contractEnd ? fmt(emp.contractEnd) : '—');
 
-    var html = '<div class="breadcrumb"><button type="button" id="back-to-team">Colaboradores</button> › Perfil</div>';
+    var html = '<div class="breadcrumb"><button type="button" id="back-to-team">Employees</button> › Profile</div>';
     html += '<div class="profile-header">'+
-      '<div class="avatar-upload-wrap">'+avatarHtml(emp,'avatar-lg')+'<button type="button" class="avatar-upload-btn" id="detail-photo-btn" title="Alterar foto">'+icon('camera')+'</button><input type="file" accept="image/*" id="detail-photo-input" class="hidden"></div>'+
-      '<div class="profile-header-info"><h2>'+esc(emp.name)+'</h2><p style="color:var(--ink-soft);font-size:13.5px;margin:2px 0 6px;">'+esc(emp.jobTitle||(emp.role==='gestor'?'Gestor':'Colaborador'))+'</p>'+employeeStatusBadge(emp)+tagRow(emp.tags)+'</div>'+
-      '<div class="profile-header-actions"><button class="btn btn-ghost btn-sm" id="detail-mark">🗓️ Marcar ausência</button><button class="btn btn-primary btn-sm" id="detail-edit">✎ Editar</button></div>'+
+      '<div class="avatar-upload-wrap">'+avatarHtml(emp,'avatar-lg')+'<button type="button" class="avatar-upload-btn" id="detail-photo-btn" title="Change photo">'+icon('camera')+'</button><input type="file" accept="image/*" id="detail-photo-input" class="hidden"></div>'+
+      '<div class="profile-header-info"><h2>'+esc(emp.name)+'</h2><p style="color:var(--ink-soft);font-size:13.5px;margin:2px 0 6px;">'+esc(emp.jobTitle||(emp.role==='gestor'?'Manager':'Employee'))+'</p>'+employeeStatusBadge(emp)+tagRow(emp.tags)+'</div>'+
+      '<div class="profile-header-actions"><button class="btn btn-ghost btn-sm" id="detail-mark">🗓️ Request time off</button><button class="btn btn-primary btn-sm" id="detail-edit">✎ Edit</button></div>'+
       '</div>';
 
     html += '<div class="profile-grid">';
-    html += '<div class="panel"><div class="panel-head"><h3>Contrato</h3></div><div class="panel-body pad">'+
-      '<div class="kv-row"><span class="kv-label">Cargo</span><span class="kv-value">'+esc(emp.jobTitle||'—')+'</span></div>'+
-      '<div class="kv-row"><span class="kv-label">Tipo de contrato</span><span class="kv-value">'+esc(contractTypeLabel(emp.contractType))+'</span></div>'+
-      '<div class="kv-row"><span class="kv-label">Data de início</span><span class="kv-value">'+fmt(emp.startDate)+'</span></div>'+
-      '<div class="kv-row"><span class="kv-label">Fim do contrato</span><span class="kv-value">'+contractEndText+'</span></div>'+
-      '<div class="kv-row"><span class="kv-label">Antiguidade</span><span class="kv-value">'+yearsOfService(emp.startDate)+' anos</span></div>'+
-      '<div class="kv-row"><span class="kv-label">Utilizador</span><span class="kv-value mono">@'+esc(emp.username)+'</span></div>'+
+    html += '<div class="panel"><div class="panel-head"><h3>Contract</h3></div><div class="panel-body pad">'+
+      '<div class="kv-row"><span class="kv-label">Job title</span><span class="kv-value">'+esc(emp.jobTitle||'—')+'</span></div>'+
+      '<div class="kv-row"><span class="kv-label">Contract type</span><span class="kv-value">'+esc(contractTypeLabel(emp.contractType))+'</span></div>'+
+      '<div class="kv-row"><span class="kv-label">Start date</span><span class="kv-value">'+fmt(emp.startDate)+'</span></div>'+
+      '<div class="kv-row"><span class="kv-label">Contract end</span><span class="kv-value">'+contractEndText+'</span></div>'+
+      '<div class="kv-row"><span class="kv-label">Tenure</span><span class="kv-value">'+yearsOfService(emp.startDate)+' years</span></div>'+
+      '<div class="kv-row"><span class="kv-label">Username</span><span class="kv-value mono">@'+esc(emp.username)+'</span></div>'+
       '</div></div>';
-    html += balanceCard(emp, 'Saldo '+new Date().getFullYear());
+    html += balanceCard(emp, 'Balance '+new Date().getFullYear());
     html += '</div>';
 
     html += '<div class="profile-grid">';
-    html += '<div class="panel"><div class="panel-head"><h3>Comunicação</h3></div><div class="panel-body pad">';
+    html += '<div class="panel"><div class="panel-head"><h3>Contact</h3></div><div class="panel-body pad">';
     if(!emp.email && !emp.phone){
-      html += emptyState('mail','Sem contactos','Edita o colaborador para adicionar um email ou telefone.');
+      html += emptyState('mail','No contact info','Edit the employee to add an email or phone number.');
     } else {
       if(emp.email) html += '<a class="comm-link" href="mailto:'+esc(emp.email)+'" target="_blank" rel="noopener">'+icon('mail')+'<div><div class="comm-link-label">Email</div><div class="comm-link-value">'+esc(emp.email)+'</div></div></a>';
       if(emp.phone) html += '<a class="comm-link" href="https://wa.me/'+onlyDigits(emp.phone)+'" target="_blank" rel="noopener">'+icon('whatsapp')+'<div><div class="comm-link-label">WhatsApp</div><div class="comm-link-value">'+esc(emp.phone)+'</div></div></a>';
     }
     html += '</div></div>';
-    html += '<div class="panel"><div class="panel-head"><h3>Notas</h3></div><div class="panel-body pad">'+
-      '<textarea id="detail-notes" rows="4" placeholder="Notas internas sobre este colaborador…" style="width:100%;border:1px solid var(--sand);border-radius:10px;padding:10px 12px;background:var(--paper);color:var(--ink);font-family:inherit;font-size:13.5px;resize:vertical;">'+esc(emp.notes||'')+'</textarea>'+
-      '<div style="display:flex;justify-content:flex-end;margin-top:10px;"><button class="btn btn-primary btn-sm" id="detail-notes-save">Guardar notas</button></div>'+
-      '<div class="form-note">Visível apenas para gestores.</div>'+
+    html += '<div class="panel"><div class="panel-head"><h3>Notes</h3></div><div class="panel-body pad">'+
+      '<textarea id="detail-notes" rows="4" placeholder="Internal notes about this employee…" style="width:100%;border:1px solid var(--sand);border-radius:10px;padding:10px 12px;background:var(--paper);color:var(--ink);font-family:inherit;font-size:13.5px;resize:vertical;">'+esc(emp.notes||'')+'</textarea>'+
+      '<div style="display:flex;justify-content:flex-end;margin-top:10px;"><button class="btn btn-primary btn-sm" id="detail-notes-save">Save notes</button></div>'+
+      '<div class="form-note">Visible only to managers.</div>'+
       '</div></div>';
     html += '</div>';
 
     var activities = employeeActivitiesCache[emp.id];
-    html += '<div class="panel"><div class="panel-head"><h3>Atividades</h3><button class="btn btn-primary btn-sm" id="detail-activity-add">+ Registar interação</button></div><div class="panel-body pad">';
+    html += '<div class="panel"><div class="panel-head"><h3>Activities</h3><button class="btn btn-primary btn-sm" id="detail-activity-add">+ Log interaction</button></div><div class="panel-body pad">';
     if(activities===undefined){
-      html += '<div class="empty">A carregar...</div>';
+      html += '<div class="empty">Loading...</div>';
     } else if(activities.length===0){
-      html += emptyState('phoneCall','Sem interações registadas','Regista chamadas, reuniões, emails ou notas sobre este colaborador.');
+      html += emptyState('phoneCall','No interactions logged','Log calls, meetings, emails or notes about this employee.');
     } else {
       activities.forEach(function(a){
         html += '<div class="activity-item"><div class="activity-icon">'+icon(ACTIVITY_ICONS[a.type]||'phoneCall')+'</div><div style="flex:1;min-width:0;">'+
           '<div class="activity-head"><span class="activity-type">'+esc(ACTIVITY_TYPE_LABELS[a.type]||a.type)+'</span><span class="activity-meta">'+fmtDateTime(a.createdAt)+'</span></div>'+
           '<div class="activity-details">'+esc(a.details)+'</div>'+
           '<div class="activity-badges">'+statusPill(ACTIVITY_STATUS_LABELS[a.status]||a.status)+(a.impact?impactPill(a.impact):'')+'</div>'+
-          '</div><button class="activity-remove" data-activity-remove="'+a.id+'" title="Remover">x</button></div>';
+          '</div><button class="activity-remove" data-activity-remove="'+a.id+'" title="Remove">x</button></div>';
       });
     }
     html += '</div></div>';
 
-    html += '<div class="panel"><div class="panel-head"><h3>Histórico de ausências</h3></div><div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Início</th><th>Fim</th><th>Dias</th><th>Estado</th><th></th></tr></thead><tbody>';
+    html += '<div class="panel"><div class="panel-head"><h3>Absence history</h3></div><div class="table-wrap"><table><thead><tr><th>Type</th><th>Start</th><th>End</th><th>Days</th><th>Status</th><th></th></tr></thead><tbody>';
     if(myLeaves.length===0){
-      html += '<tr><td colspan="6"><div class="empty">Ainda sem ausências registadas.</div></td></tr>';
+      html += '<tr><td colspan="6"><div class="empty">No time off recorded yet.</div></td></tr>';
     } else {
       myLeaves.forEach(function(l){
         var actions = '';
-        if(l.status==='pendente') actions = '<button class="btn btn-sm btn-reject" data-reject="'+l.id+'">Rejeitar</button> <button class="btn btn-sm btn-approve" data-approve="'+l.id+'">Aprovar</button>';
-        else actions = '<button class="btn btn-ghost btn-sm" data-cancel="'+l.id+'">Cancelar</button>';
+        if(l.status==='pendente') actions = '<button class="btn btn-sm btn-reject" data-reject="'+l.id+'">Reject</button> <button class="btn btn-sm btn-approve" data-approve="'+l.id+'">Approve</button>';
+        else actions = '<button class="btn btn-ghost btn-sm" data-cancel="'+l.id+'">Cancel</button>';
         html += '<tr><td>'+chip(l.type)+'</td><td class="mono">'+fmt(l.start)+'</td><td class="mono">'+fmt(l.end)+'</td><td class="mono">'+l.days+'</td><td>'+statusChip(l.status)+'</td><td><div class="row-actions">'+actions+'</div></td></tr>';
       });
     }
@@ -1376,7 +1376,7 @@
       notesSave.addEventListener('click', async function(){
         try{
           await api('employees/'+emp.id+'/notes', {method:'PUT', body: JSON.stringify({notes: document.getElementById('detail-notes').value})});
-          showToast('Notas guardadas.');
+          showToast('Notes saved.');
           await loadState();
         }catch(e){ showToast(e.message); }
       });
@@ -1385,7 +1385,7 @@
     if(addActivityBtn) addActivityBtn.addEventListener('click', function(){ openActivityModal(emp.id); });
     document.querySelectorAll('[data-activity-remove]').forEach(function(btn){
       btn.addEventListener('click', async function(){
-        if(!confirm('Remover este registo?')) return;
+        if(!confirm('Remove this record?')) return;
         try{
           await api('activities/'+btn.getAttribute('data-activity-remove'), {method:'DELETE'});
           await loadEmployeeActivities(emp.id);
@@ -1396,7 +1396,7 @@
     document.querySelectorAll('[data-reject]').forEach(function(b){ b.addEventListener('click', function(){ respondLeave(b.getAttribute('data-reject'), 'rejeitado'); }); });
     document.querySelectorAll('[data-cancel]').forEach(function(btn){
       btn.addEventListener('click', async function(){
-        if(!confirm('Cancelar esta ausência?')) return;
+        if(!confirm('Cancel this time off?')) return;
         try{ await api('leaves/'+btn.getAttribute('data-cancel'), {method:'DELETE'}); await loadState(); }
         catch(e){ showToast(e.message); }
       });
@@ -1417,37 +1417,37 @@
     if(teamListPage<0) teamListPage = 0;
     var pageRows = filtered.slice(teamListPage*pageSize, teamListPage*pageSize+pageSize);
 
-    var html = '<div class="page-head"><div><h2>Colaboradores</h2><p>Gere a equipa, contratos, saldos e acessos.</p></div>'+
-      '<button class="btn btn-primary" id="add-emp">+ Novo colaborador</button></div>';
+    var html = '<div class="page-head"><div><h2>Employees</h2><p>Manage the team, contracts, balances and access.</p></div>'+
+      '<button class="btn btn-primary" id="add-emp">+ New employee</button></div>';
     if(allTags.length){
-      html += '<div class="tag-filter-row"><button type="button" data-tagf=""><span class="tag-chip'+(!teamListTagFilter?' active':'')+'">Todas</span></button>'+
+      html += '<div class="tag-filter-row"><button type="button" data-tagf=""><span class="tag-chip'+(!teamListTagFilter?' active':'')+'">All</span></button>'+
         allTags.map(function(t){ return '<button type="button" data-tagf="'+esc(t)+'"><span class="tag-chip'+(teamListTagFilter===t?' active':'')+'">'+icon('tag')+' '+esc(t)+'</span></button>'; }).join('')+
         '</div>';
     }
-    html += '<div class="panel"><div class="panel-head"><h3>'+filtered.length+' colaborador'+(filtered.length!==1?'es':'')+'</h3>'+
-      '<div class="search-input-wrap">'+icon('search')+'<input type="text" id="team-list-search" placeholder="Pesquisar por nome, cargo ou tag…" value="'+esc(teamListSearch)+'"></div>'+
-      '</div><div class="table-wrap"><table><thead><tr><th>Colaborador</th><th>Início</th><th>Estado</th><th>Férias</th><th>Baixas</th><th></th></tr></thead><tbody>';
+    html += '<div class="panel"><div class="panel-head"><h3>'+filtered.length+' employee'+(filtered.length!==1?'s':'')+'</h3>'+
+      '<div class="search-input-wrap">'+icon('search')+'<input type="text" id="team-list-search" placeholder="Search by name, job title or tag…" value="'+esc(teamListSearch)+'"></div>'+
+      '</div><div class="table-wrap"><table><thead><tr><th>Employee</th><th>Start</th><th>Status</th><th>Vacation</th><th>Sick leave</th><th></th></tr></thead><tbody>';
     if(pageRows.length===0){
-      html += '<tr><td colspan="6"><div class="empty">Nenhum colaborador encontrado.</div></td></tr>';
+      html += '<tr><td colspan="6"><div class="empty">No employees found.</div></td></tr>';
     } else {
       pageRows.forEach(function(e){
         var b = e.balances;
         var vRemain = e.vacationDaysTotal - b.ferias.aprovado, sRemain = e.sickDaysTotal - b.baixa.aprovado;
-        html += '<tr><td><div class="list-item-main">'+avatarHtml(e)+'<div><div class="li-name">'+esc(e.name)+'</div><div class="li-sub">'+esc(e.jobTitle||(e.role==='gestor'?'Gestor':'Colaborador'))+'</div>'+tagRow(e.tags)+'</div></div></td>'+
+        html += '<tr><td><div class="list-item-main">'+avatarHtml(e)+'<div><div class="li-name">'+esc(e.name)+'</div><div class="li-sub">'+esc(e.jobTitle||(e.role==='gestor'?'Manager':'Employee'))+'</div>'+tagRow(e.tags)+'</div></div></td>'+
           '<td class="mono">'+fmt(e.startDate)+'</td>'+
           '<td>'+employeeStatusBadge(e)+'</td>'+
-          '<td class="bal">'+b.ferias.aprovado+'/'+e.vacationDaysTotal+' <span class="'+(vRemain<0?'low':'')+'">('+vRemain+' restam)</span>'+(b.ferias.pendente>0?'<div class="pending-note">+'+b.ferias.pendente+' pend.</div>':'')+'</td>'+
-          '<td class="bal">'+b.baixa.aprovado+'/'+e.sickDaysTotal+' <span class="'+(sRemain<0?'low':'')+'">('+sRemain+' restam)</span>'+(b.baixa.pendente>0?'<div class="pending-note">+'+b.baixa.pendente+' pend.</div>':'')+'</td>'+
+          '<td class="bal">'+b.ferias.aprovado+'/'+e.vacationDaysTotal+' <span class="'+(vRemain<0?'low':'')+'">('+vRemain+' remaining)</span>'+(b.ferias.pendente>0?'<div class="pending-note">+'+b.ferias.pendente+' pend.</div>':'')+'</td>'+
+          '<td class="bal">'+b.baixa.aprovado+'/'+e.sickDaysTotal+' <span class="'+(sRemain<0?'low':'')+'">('+sRemain+' remaining)</span>'+(b.baixa.pendente>0?'<div class="pending-note">+'+b.baixa.pendente+' pend.</div>':'')+'</td>'+
           '<td><div class="row-actions">'+
-            '<button class="icon-btn" title="Ver perfil" data-view-emp="'+e.id+'">👁</button>'+
-            '<button class="icon-btn" title="Marcar ausência" data-mark="'+e.id+'" data-name="'+esc(e.name)+'">🗓️</button>'+
-            '<button class="icon-btn" title="Editar" data-edit="'+e.id+'">✎</button>'+
-            '<button class="icon-btn" title="Remover" data-remove="'+e.id+'">🗑</button>'+
+            '<button class="icon-btn" title="View profile" data-view-emp="'+e.id+'">👁</button>'+
+            '<button class="icon-btn" title="Request time off" data-mark="'+e.id+'" data-name="'+esc(e.name)+'">🗓️</button>'+
+            '<button class="icon-btn" title="Edit" data-edit="'+e.id+'">✎</button>'+
+            '<button class="icon-btn" title="Remove" data-remove="'+e.id+'">🗑</button>'+
           '</div></td></tr>';
       });
     }
     html += '</tbody></table></div>';
-    html += '<div class="table-foot"><span>'+(filtered.length===0?0:teamListPage*pageSize+1)+'–'+Math.min(filtered.length, teamListPage*pageSize+pageSize)+' de '+filtered.length+' colaboradores</span>'+
+    html += '<div class="table-foot"><span>'+(filtered.length===0?0:teamListPage*pageSize+1)+'–'+Math.min(filtered.length, teamListPage*pageSize+pageSize)+' of '+filtered.length+' employees</span>'+
       '<div class="pager"><button class="icon-btn" id="team-list-prev" '+(teamListPage<=0?'disabled':'')+'>‹</button><span>'+(teamListPage+1)+' / '+totalPages+'</span><button class="icon-btn" id="team-list-next" '+(teamListPage>=totalPages-1?'disabled':'')+'>›</button></div></div>';
     html += '</div>';
     return html;
@@ -1486,7 +1486,7 @@
       btn.addEventListener('click', async function(){
         var id = btn.getAttribute('data-remove');
         var emp = state.employees.find(function(e){return e.id===id;});
-        if(!confirm('Remover '+emp.name+' e todo o seu histórico?')) return;
+        if(!confirm('Remove '+emp.name+' and all their history?')) return;
         try{ await api('employees/'+id, {method:'DELETE'}); await loadState(); }
         catch(e){ showToast(e.message); }
       });
@@ -1506,10 +1506,10 @@
   function openContactModal(){
     var me = state.me;
     var m = openModal(
-      '<h3>Editar contacto</h3><p class="modal-sub">'+esc(me.name)+'</p>'+
+      '<h3>Edit contact</h3><p class="modal-sub">'+esc(me.name)+'</p>'+
       '<div class="field"><label>Email</label><input id="f-email" type="email" value="'+esc(me.email||'')+'"></div>'+
-      '<div class="field"><label>Telefone (WhatsApp)</label><input id="f-phone" value="'+esc(me.phone||'')+'"></div>'+
-      '<div class="modal-actions"><button class="btn btn-ghost" id="c-cancel">Cancelar</button><button class="btn btn-primary" id="c-save">Guardar</button></div>'
+      '<div class="field"><label>Phone (WhatsApp)</label><input id="f-phone" value="'+esc(me.phone||'')+'"></div>'+
+      '<div class="modal-actions"><button class="btn btn-ghost" id="c-cancel">Cancel</button><button class="btn btn-primary" id="c-save">Save</button></div>'
     );
     m.querySelector('#c-cancel').addEventListener('click', closeModal);
     m.querySelector('#c-save').addEventListener('click', async function(){
@@ -1528,35 +1528,35 @@
     var e = emp || { id:null, name:'', startDate: todayIso(), email:'', phone:'', username:'', role:'colaborador', vacationDaysTotal:22, sickDaysTotal:3, jobTitle:'', contractType:'efetivo', contractEnd:'', tags:[] };
     var contractOptions = CONTRACT_TYPES.map(function(c){ return '<option value="'+c.value+'"'+(e.contractType===c.value?' selected':'')+'>'+c.label+'</option>'; }).join('');
     var m = openModal(
-      '<h3>'+(isNew?'Novo colaborador':'Editar colaborador')+'</h3><p class="modal-sub">Preenche os dados, o contrato e o acesso de login.</p>'+
+      '<h3>'+(isNew?'New employee':'Edit employee')+'</h3><p class="modal-sub">Fill in the details, contract and login access.</p>'+
       '<div class="form-error" id="emp-err"></div>'+
       '<div class="field-row">'+
-        '<div class="field"><label>Nome</label><input id="f-name" value="'+esc(e.name)+'"></div>'+
-        '<div class="field"><label>Cargo / Designação</label><input id="f-job" placeholder="ex: Designer de UX" value="'+esc(e.jobTitle||'')+'"></div>'+
+        '<div class="field"><label>Name</label><input id="f-name" value="'+esc(e.name)+'"></div>'+
+        '<div class="field"><label>Job title</label><input id="f-job" placeholder="e.g. UX Designer" value="'+esc(e.jobTitle||'')+'"></div>'+
       '</div>'+
       '<div class="field-row">'+
-        '<div class="field"><label>Data de início</label><input id="f-start" type="date" value="'+e.startDate+'"></div>'+
-        '<div class="field"><label>Função</label><select id="f-role"><option value="colaborador"'+(e.role==='colaborador'?' selected':'')+'>Colaborador</option><option value="gestor"'+(e.role==='gestor'?' selected':'')+'>Gestor</option></select></div>'+
+        '<div class="field"><label>Start date</label><input id="f-start" type="date" value="'+e.startDate+'"></div>'+
+        '<div class="field"><label>Role</label><select id="f-role"><option value="colaborador"'+(e.role==='colaborador'?' selected':'')+'>Employee</option><option value="gestor"'+(e.role==='gestor'?' selected':'')+'>Manager</option></select></div>'+
       '</div>'+
       '<div class="field-row">'+
-        '<div class="field"><label>Tipo de contrato</label><select id="f-contract-type">'+contractOptions+'</select></div>'+
-        '<div class="field" id="f-contract-end-wrap"><label>Fim do contrato</label><input id="f-contract-end" type="date" value="'+(e.contractEnd||'')+'"></div>'+
+        '<div class="field"><label>Contract type</label><select id="f-contract-type">'+contractOptions+'</select></div>'+
+        '<div class="field" id="f-contract-end-wrap"><label>Contract end</label><input id="f-contract-end" type="date" value="'+(e.contractEnd||'')+'"></div>'+
       '</div>'+
       '<div class="field-row">'+
         '<div class="field"><label>Email</label><input id="f-email" type="email" value="'+esc(e.email||'')+'"></div>'+
-        '<div class="field"><label>Telefone (WhatsApp)</label><input id="f-phone" value="'+esc(e.phone||'')+'"></div>'+
+        '<div class="field"><label>Phone (WhatsApp)</label><input id="f-phone" value="'+esc(e.phone||'')+'"></div>'+
       '</div>'+
       '<div class="field-row">'+
-        '<div class="field"><label>Dias de férias / ano</label><input id="f-vac" type="number" min="0" value="'+e.vacationDaysTotal+'"></div>'+
-        '<div class="field"><label>Dias de baixa / ano</label><input id="f-sick" type="number" min="0" value="'+e.sickDaysTotal+'"></div>'+
+        '<div class="field"><label>Vacation days / year</label><input id="f-vac" type="number" min="0" value="'+e.vacationDaysTotal+'"></div>'+
+        '<div class="field"><label>Sick days / year</label><input id="f-sick" type="number" min="0" value="'+e.sickDaysTotal+'"></div>'+
       '</div>'+
-      '<div class="field"><label>Tags</label><input id="f-tags" placeholder="ex: Designer, R&D, Evento X" value="'+esc((e.tags||[]).join(', '))+'"><div class="form-note">Separadas por vírgula.</div></div>'+
+      '<div class="field"><label>Tags</label><input id="f-tags" placeholder="e.g. Designer, R&D, Event X" value="'+esc((e.tags||[]).join(', '))+'"><div class="form-note">Comma-separated.</div></div>'+
       '<div class="field-row">'+
-        '<div class="field"><label>Utilizador</label><input id="f-user" value="'+esc(e.username)+'"></div>'+
-        '<div class="field"><label>'+(isNew?'Palavra-passe':'Nova palavra-passe (opcional)')+'</label><input id="f-pass" value=""></div>'+
+        '<div class="field"><label>Username</label><input id="f-user" value="'+esc(e.username)+'"></div>'+
+        '<div class="field"><label>'+(isNew?'Password':'New password (optional)')+'</label><input id="f-pass" value=""></div>'+
       '</div>'+
-      '<div class="form-note">As passwords ficam encriptadas no servidor — nunca são devolvidas ao browser.</div>'+
-      '<div class="modal-actions"><button class="btn btn-ghost" id="e-cancel">Cancelar</button><button class="btn btn-primary" id="e-save">Guardar</button></div>'
+      '<div class="form-note">Passwords are encrypted on the server — they are never returned to the browser.</div>'+
+      '<div class="modal-actions"><button class="btn btn-ghost" id="e-cancel">Cancel</button><button class="btn btn-primary" id="e-save">Save</button></div>'
     );
     function syncContractEndVisibility(){
       var wrap = document.getElementById('f-contract-end-wrap');
@@ -1571,7 +1571,7 @@
       var password = document.getElementById('f-pass').value;
       var errEl = document.getElementById('emp-err');
       if(!name || !username || (isNew && !password)){
-        errEl.textContent = 'Preenche nome, utilizador e palavra-passe.'; errEl.style.display='block'; return;
+        errEl.textContent = 'Fill in the name, username and password.'; errEl.style.display='block'; return;
       }
       var payload = {
         name: name, username: username,
@@ -1597,64 +1597,64 @@
 
   function openAnnouncementModal(){
     var m = openModal(
-      '<h3>Novo comunicado</h3><p class="modal-sub">Visível para toda a equipa no Meu Painel.</p>'+
+      '<h3>New announcement</h3><p class="modal-sub">Visible to the whole team on My Dashboard.</p>'+
       '<div class="form-error" id="an-err"></div>'+
-      '<div class="field"><label>Título</label><input id="f-an-title" placeholder="ex: Encerramento de Natal"></div>'+
-      '<div class="field"><label>Mensagem</label><textarea id="f-an-body" rows="4" style="width:100%;border:1px solid var(--sand);border-radius:10px;padding:10px 12px;background:var(--paper);color:var(--ink);font-family:inherit;font-size:13.5px;resize:vertical;"></textarea></div>'+
-      '<div class="modal-actions"><button class="btn btn-ghost" id="an-cancel">Cancelar</button><button class="btn btn-primary" id="an-save">Publicar</button></div>'
+      '<div class="field"><label>Title</label><input id="f-an-title" placeholder="e.g. Christmas closure"></div>'+
+      '<div class="field"><label>Message</label><textarea id="f-an-body" rows="4" style="width:100%;border:1px solid var(--sand);border-radius:10px;padding:10px 12px;background:var(--paper);color:var(--ink);font-family:inherit;font-size:13.5px;resize:vertical;"></textarea></div>'+
+      '<div class="modal-actions"><button class="btn btn-ghost" id="an-cancel">Cancel</button><button class="btn btn-primary" id="an-save">Publish</button></div>'
     );
     m.querySelector('#an-cancel').addEventListener('click', closeModal);
     m.querySelector('#an-save').addEventListener('click', async function(){
       var title = document.getElementById('f-an-title').value.trim();
       var body = document.getElementById('f-an-body').value.trim();
       var errEl = document.getElementById('an-err');
-      if(!title || !body){ errEl.textContent='Preenche o título e a mensagem.'; errEl.style.display='block'; return; }
+      if(!title || !body){ errEl.textContent='Fill in the title and message.'; errEl.style.display='block'; return; }
       try{
         await api('announcements', {method:'POST', body: JSON.stringify({title:title, body:body})});
         closeModal(); await loadState();
-        showToast('Comunicado publicado.');
+        showToast('Announcement published.');
       }catch(e){ errEl.textContent = e.message; errEl.style.display='block'; }
     });
   }
 
   function openMessageModal(){
     var m = openModal(
-      '<h3>Pedido de informação</h3><p class="modal-sub">Envia uma pergunta ou pedido ao RH — não é para marcar férias ou baixa.</p>'+
+      '<h3>Information request</h3><p class="modal-sub">Send a question or request to HR — this is not for requesting vacation or sick leave.</p>'+
       '<div class="form-error" id="msg-err"></div>'+
-      '<div class="field"><label>Assunto</label><input id="f-msg-subject" placeholder="ex: Dúvida sobre subsídio de refeição"></div>'+
-      '<div class="field"><label>Mensagem</label><textarea id="f-msg-body" rows="4" style="width:100%;border:1px solid var(--sand);border-radius:10px;padding:10px 12px;background:var(--paper);color:var(--ink);font-family:inherit;font-size:13.5px;resize:vertical;"></textarea></div>'+
-      '<div class="modal-actions"><button class="btn btn-ghost" id="msg-cancel">Cancelar</button><button class="btn btn-primary" id="msg-save">Enviar</button></div>'
+      '<div class="field"><label>Subject</label><input id="f-msg-subject" placeholder="e.g. Question about meal allowance"></div>'+
+      '<div class="field"><label>Message</label><textarea id="f-msg-body" rows="4" style="width:100%;border:1px solid var(--sand);border-radius:10px;padding:10px 12px;background:var(--paper);color:var(--ink);font-family:inherit;font-size:13.5px;resize:vertical;"></textarea></div>'+
+      '<div class="modal-actions"><button class="btn btn-ghost" id="msg-cancel">Cancel</button><button class="btn btn-primary" id="msg-save">Send</button></div>'
     );
     m.querySelector('#msg-cancel').addEventListener('click', closeModal);
     m.querySelector('#msg-save').addEventListener('click', async function(){
       var subject = document.getElementById('f-msg-subject').value.trim();
       var body = document.getElementById('f-msg-body').value.trim();
       var errEl = document.getElementById('msg-err');
-      if(!subject || !body){ errEl.textContent='Preenche o assunto e a mensagem.'; errEl.style.display='block'; return; }
+      if(!subject || !body){ errEl.textContent='Fill in the subject and message.'; errEl.style.display='block'; return; }
       try{
         await api('messages', {method:'POST', body: JSON.stringify({subject:subject, body:body})});
         closeModal(); await loadState();
-        showToast('Pedido enviado.');
+        showToast('Request sent.');
       }catch(e){ errEl.textContent = e.message; errEl.style.display='block'; }
     });
   }
 
   function openMessageRespondModal(msg){
     var m = openModal(
-      '<h3>Responder a '+esc(msg.employeeName)+'</h3><p class="modal-sub">'+esc(msg.subject)+' — '+esc(msg.body)+'</p>'+
+      '<h3>Reply to '+esc(msg.employeeName)+'</h3><p class="modal-sub">'+esc(msg.subject)+' — '+esc(msg.body)+'</p>'+
       '<div class="form-error" id="msgr-err"></div>'+
-      '<div class="field"><label>Resposta</label><textarea id="f-msgr-response" rows="4" style="width:100%;border:1px solid var(--sand);border-radius:10px;padding:10px 12px;background:var(--paper);color:var(--ink);font-family:inherit;font-size:13.5px;resize:vertical;"></textarea></div>'+
-      '<div class="modal-actions"><button class="btn btn-ghost" id="msgr-cancel">Cancelar</button><button class="btn btn-primary" id="msgr-save">Responder</button></div>'
+      '<div class="field"><label>Reply</label><textarea id="f-msgr-response" rows="4" style="width:100%;border:1px solid var(--sand);border-radius:10px;padding:10px 12px;background:var(--paper);color:var(--ink);font-family:inherit;font-size:13.5px;resize:vertical;"></textarea></div>'+
+      '<div class="modal-actions"><button class="btn btn-ghost" id="msgr-cancel">Cancel</button><button class="btn btn-primary" id="msgr-save">Reply</button></div>'
     );
     m.querySelector('#msgr-cancel').addEventListener('click', closeModal);
     m.querySelector('#msgr-save').addEventListener('click', async function(){
       var response = document.getElementById('f-msgr-response').value.trim();
       var errEl = document.getElementById('msgr-err');
-      if(!response){ errEl.textContent='Escreve uma resposta.'; errEl.style.display='block'; return; }
+      if(!response){ errEl.textContent='Write a reply.'; errEl.style.display='block'; return; }
       try{
         await api('messages/'+msg.id+'/respond', {method:'POST', body: JSON.stringify({response:response})});
         closeModal(); await loadState();
-        showToast('Resposta enviada.');
+        showToast('Reply sent.');
       }catch(e){ errEl.textContent = e.message; errEl.style.display='block'; }
     });
   }
@@ -1664,21 +1664,21 @@
     var statusOptions = Object.keys(ACTIVITY_STATUS_LABELS).map(function(k){ return '<option value="'+k+'">'+ACTIVITY_STATUS_LABELS[k]+'</option>'; }).join('');
     var impactOptions = '<option value="">—</option>'+Object.keys(ACTIVITY_IMPACT_LABELS).map(function(k){ return '<option value="'+k+'">'+ACTIVITY_IMPACT_LABELS[k]+'</option>'; }).join('');
     var m = openModal(
-      '<h3>Registar interação</h3><p class="modal-sub">O que aconteceu, quando e como correu.</p>'+
+      '<h3>Log interaction</h3><p class="modal-sub">What happened, when, and how it went.</p>'+
       '<div class="form-error" id="act-err"></div>'+
       '<div class="field-row">'+
-        '<div class="field"><label>Tipo</label><select id="f-act-type">'+typeOptions+'</select></div>'+
-        '<div class="field"><label>Estado</label><select id="f-act-status">'+statusOptions+'</select></div>'+
+        '<div class="field"><label>Type</label><select id="f-act-type">'+typeOptions+'</select></div>'+
+        '<div class="field"><label>Status</label><select id="f-act-status">'+statusOptions+'</select></div>'+
       '</div>'+
-      '<div class="field"><label>Detalhes</label><textarea id="f-act-details" rows="4" placeholder="O que foi falado ou combinado…" style="width:100%;border:1px solid var(--sand);border-radius:10px;padding:10px 12px;background:var(--paper);color:var(--ink);font-family:inherit;font-size:13.5px;resize:vertical;"></textarea></div>'+
-      '<div class="field"><label>Impacto (opcional)</label><select id="f-act-impact">'+impactOptions+'</select></div>'+
-      '<div class="modal-actions"><button class="btn btn-ghost" id="act-cancel">Cancelar</button><button class="btn btn-primary" id="act-save">Guardar</button></div>'
+      '<div class="field"><label>Details</label><textarea id="f-act-details" rows="4" placeholder="What was discussed or agreed…" style="width:100%;border:1px solid var(--sand);border-radius:10px;padding:10px 12px;background:var(--paper);color:var(--ink);font-family:inherit;font-size:13.5px;resize:vertical;"></textarea></div>'+
+      '<div class="field"><label>Impact (optional)</label><select id="f-act-impact">'+impactOptions+'</select></div>'+
+      '<div class="modal-actions"><button class="btn btn-ghost" id="act-cancel">Cancel</button><button class="btn btn-primary" id="act-save">Save</button></div>'
     );
     m.querySelector('#act-cancel').addEventListener('click', closeModal);
     m.querySelector('#act-save').addEventListener('click', async function(){
       var details = document.getElementById('f-act-details').value.trim();
       var errEl = document.getElementById('act-err');
-      if(!details){ errEl.textContent='Descreve o que aconteceu.'; errEl.style.display='block'; return; }
+      if(!details){ errEl.textContent='Describe what happened.'; errEl.style.display='block'; return; }
       try{
         await api('employees/'+empId+'/activities', {method:'POST', body: JSON.stringify({
           type: document.getElementById('f-act-type').value,
@@ -1688,7 +1688,7 @@
         })});
         closeModal();
         await loadEmployeeActivities(empId);
-        showToast('Interação registada.');
+        showToast('Interaction logged.');
       }catch(e){ errEl.textContent = e.message; errEl.style.display='block'; }
     });
   }
@@ -1696,23 +1696,23 @@
   function openLeaveModal(employeeId, employeeName){
     var type = 'ferias';
     var m = openModal(
-      '<h3>Marcar ausência</h3><p class="modal-sub">'+esc(employeeName)+'</p>'+
+      '<h3>Request time off</h3><p class="modal-sub">'+esc(employeeName)+'</p>'+
       '<div class="form-error" id="lv-err"></div>'+
-      '<div class="segment"><button type="button" class="active" id="seg-ferias">Férias</button><button type="button" id="seg-baixa">Baixa</button></div>'+
+      '<div class="segment"><button type="button" class="active" id="seg-ferias">Vacation</button><button type="button" id="seg-baixa">Sick leave</button></div>'+
       '<div class="field-row">'+
-        '<div class="field"><label>Início</label><input id="f-lstart" type="date" value="'+todayIso()+'"></div>'+
-        '<div class="field"><label>Fim</label><input id="f-lend" type="date" value="'+todayIso()+'"></div>'+
+        '<div class="field"><label>Start</label><input id="f-lstart" type="date" value="'+todayIso()+'"></div>'+
+        '<div class="field"><label>End</label><input id="f-lend" type="date" value="'+todayIso()+'"></div>'+
       '</div>'+
       '<div class="form-note" id="lv-preview"></div>'+
-      '<div class="modal-actions"><button class="btn btn-ghost" id="l-cancel">Cancelar</button><button class="btn btn-primary" id="l-save">Marcar</button></div>'
+      '<div class="modal-actions"><button class="btn btn-ghost" id="l-cancel">Cancel</button><button class="btn btn-primary" id="l-save">Submit</button></div>'
     );
     var isAuto = state.me.role==='gestor';
     function updatePreview(){
       var s=document.getElementById('f-lstart').value, en=document.getElementById('f-lend').value;
       var el=document.getElementById('lv-preview');
-      if(!s || !en || parseIso(en)<parseIso(s)){ el.textContent='Escolhe um intervalo de datas válido.'; return; }
+      if(!s || !en || parseIso(en)<parseIso(s)){ el.textContent='Choose a valid date range.'; return; }
       var days = type==='ferias' ? businessDaysCount(s,en) : calendarDaysCount(s,en);
-      el.textContent = days+' dia'+(days!==1?'s':'')+(type==='ferias'?' úteis':'')+(isAuto?'':' · fica pendente de aprovação');
+      el.textContent = days+' day'+(days!==1?'s':'')+(type==='ferias'?' (business days)':'')+(isAuto?'':' · will be pending approval');
     }
     m.querySelector('#seg-ferias').addEventListener('click', function(){ type='ferias'; this.classList.add('active'); m.querySelector('#seg-baixa').classList.remove('active'); updatePreview(); });
     m.querySelector('#seg-baixa').addEventListener('click', function(){ type='baixa'; this.classList.add('active','baixa'); m.querySelector('#seg-ferias').classList.remove('active'); updatePreview(); });
@@ -1726,7 +1726,7 @@
       try{
         var res = await api('leaves', {method:'POST', body: JSON.stringify({employeeId:employeeId, type:type, start:s, end:en})});
         closeModal(); await loadState();
-        showToast(res.status==='aprovado' ? (type==='ferias'?'Férias marcadas.':'Baixa registada.') : 'Pedido enviado — fica pendente até o administrador aprovar.');
+        showToast(res.status==='aprovado' ? (type==='ferias'?'Vacation requested.':'Sick leave recorded.') : 'Request sent — pending until the administrator approves it.');
       }catch(err){ errEl.textContent = err.message; errEl.style.display='block'; }
     });
   }
